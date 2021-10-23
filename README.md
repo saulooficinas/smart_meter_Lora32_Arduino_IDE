@@ -1,34 +1,35 @@
 # Projeto SMWF (Smart Meter Water Flux) em LoRa 32
 
 Versão 2 do Projeto das Oficinas 4.0.
+Organizado por alunos do Instituto Federal de Alagoas - Campus Palmeida dos índios (PIN);
 
-Materiais utilizados:
+Foi utilizado o Arduino IDE, devido a facilidade com as bibliotecas presentes nele.
 
-...
+## Objetivos do projeto:
 
-Objetivos do projeto:
+* Display OLED;
 
-=> Display OLED;
+* Comunicação com MySQL;
 
-=> Comunicação com MySQL;
+* Conexão WiFi com WiFiManager;
 
-=> Conexão WiFi com WiFiManager;
+* WebServer;
 
-=> WebServer;
+* Medidor de vazão eletromagnético;
 
-=> Medidor de vazão eletromagnético;
-
-=> APP para vizualizar dados;
+* APP para vizualizar dados;
 
 O código para a comunicação com o MySQL é via script em PHP utilizando um WebServer mantido pelo XAMPP
 
 
 Link do código em PHP:https://github.com/saulooficinas/conexaoWebServer
 
-
-# Definição das funções utilizadas
-
-# Definicão das tarefas utilizadas no projeto
+## Materiais utilizados
 
 
-# Esquema de processamento de dados.
+## Definição das funções utilizadas
+
+## Definicão das tarefas utilizadas no projeto
+
+
+## Esquema de processamento de dados.
