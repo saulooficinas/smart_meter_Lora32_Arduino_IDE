@@ -6,7 +6,8 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 21/10/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 22/10/2021
+   Por: Saulo José Almeida Silva
  ********************************************************************************************/
 
 
