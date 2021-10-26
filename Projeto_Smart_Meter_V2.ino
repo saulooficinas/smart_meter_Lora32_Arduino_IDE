@@ -373,15 +373,15 @@ void initDisplay()
 }
 
 //Função para imprimir dados no display
-void printDisplay(float a, float b)
+void printDisplay(float protoData, float refData)
 {
   Heltec.display->clear();
   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
   Heltec.display->setFont(ArialMT_Plain_16);
   Heltec.display->drawString(30, 0, "<SMWF>");
   Heltec.display->setFont(ArialMT_Plain_10);
-  Heltec.display->drawString(0, 20, ">>Vazão: " + String(a) + " L/min");
-  Heltec.display->drawString(0, 30, ">>Ref: " + String(b) + " L/min");
+  Heltec.display->drawString(0, 20, ">>Vazão: " + String(protoData) + " L/min");
+  Heltec.display->drawString(0, 30, ">>Ref: " + String(refData) + " L/min");
   Heltec.display->drawString(0, 40, ">>Rede WiFi:\n" + String("Almeida/Aquino"));
   Heltec.display->display();
 }
@@ -484,15 +484,15 @@ float readRefSensor()
 }
 
 //Função para transformar de tensão para litros.
-float transUnit(float d)
+float transUnit(float protoData)
 {
-  return d * (MAT_PI * DIAM_TUBE) / (4 * CONST_SENSOR * CAMPO_BOBINA);
+  return protoData * (MAT_PI * DIAM_TUBE) / (4 * CONST_SENSOR * CAMPO_BOBINA);
 }
 
 //Função para calcular a diferença entre dois valores.
-float difValues(float a, float b)
+float difValues(float valueA, float valueB)
 {
-  return 100 * (b - a) / b;
+  return 100 * (valueB - valueA) / valueB;
 }
 
 //Função inicial do projeto, para mostrar logotipo
@@ -506,9 +506,9 @@ void creditsProto()
 }
 
 //Barra de carregamento para indicar inicialização dos processos.
-void initBarDisplay(int a, int b,   char* v)
+void initBarDisplay(int iniLoad, int finLoad,   char* infChar)
 {
-  for (int i = a; i <= b; i = i + 5)
+  for (int i = iniLoad; i <= finLoad; i = iniLoad + 5)
   {
     Heltec.display->clear();
     Heltec.display->drawProgressBar(0, 40, 120, 10, i);
@@ -516,7 +516,7 @@ void initBarDisplay(int a, int b,   char* v)
     Heltec.display->setFont(ArialMT_Plain_10);
     Heltec.display->drawString(60, 10, "INICIALIZANDO");
     Heltec.display->drawString(64, 25, String(i) + "%");
-    Heltec.display->drawString(60, 54, v);
+    Heltec.display->drawString(60, 54, infChar);
     Heltec.display->display();
     delay(100);
   }
