@@ -6,8 +6,7 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 22/10/2021
-   Por: Saulo José Almeida Silva
+   Ultima atualização: 26/10/2021 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -20,7 +19,12 @@
   |-vTaskDisplay   |      01        |         01        |   Imprime dados no display OLED          |
   |----------------|----------------|-------------------|------------------------------------------|
   |-vTaskMYSQL     |      01        |         02        |   Envia dados do protótipo para o MYSQL  |
+  |----------------|----------------|-------------------|------------------------------------------|
+  |-vTaskWiFiReset |      00        |         02        | Chama a rotina de reconfigurar WiFi      |
+  |----------------|----------------|-------------------|------------------------------------------|
+XX|-vTaskRefSensor |      01        |         04        | Leitura/tratamento da ISR do sensor      |
 ****************************************************************************************************
+
 
     >> NÚCLEOS:
         => APP_CPU_NUM = 00 = ARDUINO_RUNNING_CORE
@@ -36,9 +40,7 @@
      k: Constante encontrada nos testes;
      B: Módulo do campo gerado pelas bobinas; (T)
 
-
-      Bug: OLED NÃO INICIA COM O FREERTOS.
-      Provavel causa: tarefas executam muito rápido e os dados não chegam no OLED.
+    BUG ATUAL:
 
   ==================================|| INCLUDES DAS BIBLIOTECAS || ===============================*/
 
@@ -64,6 +66,7 @@
 #define ARDUINO_RUNNING_CORE 1
 #endif
 /*================================|| Handle das tasks e protótipos ||===========================*/
+
 //Filas:
 //xFilaDisplay: Fila para enviar dados para o Display
 //xFilaMYSQL: Fila para enviar dados para o MySQL
@@ -76,6 +79,9 @@ TaskHandle_t vTaskDisplayHandle;
 TaskHandle_t vTaskMySQLHandle;
 TaskHandle_t vTaskWiFiResetHandle;
 
+//Semaforos Handles
+SemaphoreHandle_t WiFiResetSemaphore;
+
 //Protótipo das Tasks
 void vTaskDataSensor(void* pvParamaters);
 void vTaskDisplay(void* pvParamaters);
@@ -87,14 +93,15 @@ void configModeCallback(WiFiManager *myWiFiManager);
 
 //Função de callback para quando salvar as informações
 void saveConfigCallback();
+
 /*======================================|| SETUP ||=============================================*/
 void setup() {
   //Iniciando Serial
   Serial.begin(115200);
 
-
   //Gerando interrupções
-
+  attachInterrupt(digitalPinToInterrupt(pin_ISR_WiFi), WiFiISRCallback, RISING);
+  //attachInterrupt(digitalPinToInterrupt(pin_ISR_Ref), ISR, RISING)
 
   //Funções para inicializar os equipamentos.
   Serial.println("[SMWF]: Configurando sistema...");
@@ -106,7 +113,7 @@ void setup() {
 }
 /*======================================|| loop ||==============================================*/
 void loop() {
-  digitalWrite(13, !digitalRead(13));
+  vTaskDelete(NULL); //Deletando a task loop.
 }
 /*=====================================|| DEFINIÇÃO DAS FUNÇÕES ||==============================*/
 //Função para iniciar tasks e filas do FreeRTOS.
@@ -120,7 +127,11 @@ void initFreeRTOS()
                    1, //Quantidade de elementos
                    sizeof(sensorRef));//Tamanho de cada item.
 
+  //Fila do MySQL
   xFilaMySQL = xQueueCreate(1, sizeof(sensorRef));
+
+  //Gerando semaforo binário para o botão de resetar WiFi
+  WiFiResetSemaphore = xSemaphoreCreateBinary();
 
   if (xFilaMySQL != NULL && xFilaDisplay != NULL)
   {
@@ -173,9 +184,9 @@ void initFreeRTOS()
                         , "TaskWiFiReset" //Nome para Debug
                         , configMINIMAL_STACK_SIZE + 1024 //Memória reservada
                         , NULL //Parâmetro inicial enviado
-                        , 2 //Prioridade
+                        , 4 //Prioridade
                         , &vTaskWiFiResetHandle //Handle da tarefa
-                        , 1); //Utilizará o segundo núcleo de processamento.
+                        , 0); //Utilizará o segundo núcleo de processamento.
     if (returnWiFiReset != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1.  Não foi possível gerar a tarefa do WiFiReset.");
@@ -185,7 +196,7 @@ void initFreeRTOS()
   }
   else
   {
-    Serial.println("[SMWF]: Não foi possível gerar os dados... Houve um erro!");
+    Serial.println("[SMWF]: Não foi possível gerar as Tasks... Houve um erro!");
     while (1);
   }
 }
@@ -268,7 +279,8 @@ void vTaskMySQL(void* pvParamaters)
 
       if (!client.connect(host, httpPort))
       {
-        Serial.println("[MySQL_T]: Falha na conexão");
+        Serial.println("[MySQL_T]: Falha na conexão. Verifique o Host ou a Porta.");
+        errorMessage(404, 5000);
         return;
       }
 
@@ -312,6 +324,7 @@ void vTaskMySQL(void* pvParamaters)
           Serial.println();
           Serial.println("[MySQL_T]: Houve um erro ao salvar o dado. Verifique as configurações.");
           //Poderia ligar um led para me avisar que não está funcionando.
+          errorMessage(401,5000);
         }
       }
 
@@ -323,17 +336,26 @@ void vTaskMySQL(void* pvParamaters)
   }
 }
 
-//Tarefa para resetar o WiFi (Precisa de semáforo)
+//Tarefa para resetar o WiFi (Precisa de semáforo!)
 void vTaskWiFiReset(void* pvParamaters)
 {
   (void) pvParamaters;
+  uint8_t deboucing = 0;
 
   while (1)
   {
-    vTaskDelete(NULL);
+    //Espera liberar o semaforo binário para liberar a operação de resetar WiFi.
+    xSemaphoreTake(WiFiResetSemaphore, portMAX_DELAY);
+    WiFiManager wifiManager;
+    if (!wifiManager.autoConnect("SMWF_AP", "12345678"))
+    {
+      Serial.println("[ISR_WIFI]: Falha ao reconectar.");
+      delay(2000);
+      ESP.restart();
+
+    }
   }
 }
-
 
 /* Definição das demais funções*/
 //Procedimentos
@@ -350,15 +372,17 @@ void initDisplay()
   Serial.println("[SMWF]: Display iniciado com sucesso.");
 }
 
+//Função para imprimir dados no display
 void printDisplay(float a, float b)
 {
   Heltec.display->clear();
+  Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
   Heltec.display->setFont(ArialMT_Plain_16);
   Heltec.display->drawString(30, 0, "<SMWF>");
   Heltec.display->setFont(ArialMT_Plain_10);
   Heltec.display->drawString(0, 20, ">>Vazão: " + String(a) + " L/min");
   Heltec.display->drawString(0, 30, ">>Ref: " + String(b) + " L/min");
-  Heltec.display->drawString(0, 40, ">>Rede WiFi: " + String("Almeida/Aquino"));
+  Heltec.display->drawString(0, 40, ">>Rede WiFi:\n" + String("Almeida/Aquino"));
   Heltec.display->display();
 }
 
@@ -370,12 +394,16 @@ void initSaidas()
   //Configurando Pinos
   pinMode(PIN_PROTOTIPO, INPUT);
   pinMode(PIN_REF, INPUT);
+  pinMode(pin_ISR_WiFi, INPUT_PULLUP);
+  pinMode(pin_ISR_Ref, INPUT_PULLUP);
 
   //Debug
   Serial.println("[InitSaidas]: Pinos =>");
   Serial.println(">>Pin_Protótipo: " + String(PIN_PROTOTIPO));
   Serial.println(">>Pin_Ref: " + String(PIN_REF));
+  Serial.println(">>ISR_WiFi: " + String(pin_ISR_WiFi));
   Serial.println(">>IP_Sensor: " + String(IP_SENSOR));
+
 
   //CHamando carregamento.
   initBarDisplay(0, 25, CharS);
@@ -396,17 +424,18 @@ void initWiFi()
   WiFiManager wifiManager;
 
   //Reseta as configurações do WiFiManager... Posso tirar, caso eu queria.
-  wifiManager.resetSettings();
+  //wifiManager.resetSettings();
 
   //Funções de callback
   wifiManager.setAPCallback(configModeCallback);
 
   wifiManager.setSaveConfigCallback(saveConfigCallback);
 
-  wifiManager.autoConnect("SWMF_AP", "12345678");
+  wifiManager.autoConnect("SMWF_AP", "12345678");
 }
 
-void configModeCallback(WiFiManager *myWiFiManager)
+//Callback para WiFiManager
+void configModeCallback(WiFiManager * myWiFiManager)
 {
   //  Serial.println("Entered config mode");
   Serial.println("Entrou no modo de configuração");
@@ -425,6 +454,7 @@ void configModeCallback(WiFiManager *myWiFiManager)
   Heltec.display->display();
 }
 
+//Callback para quando o WiFi for salvo
 void saveConfigCallback()
 {
   Serial.println("[SMWF]: Configuração salva");
@@ -465,6 +495,7 @@ float difValues(float a, float b)
   return 100 * (b - a) / b;
 }
 
+//Função inicial do projeto, para mostrar logotipo
 void creditsProto()
 {
   Heltec.display->clear();
@@ -474,6 +505,7 @@ void creditsProto()
   Heltec.display->display();
 }
 
+//Barra de carregamento para indicar inicialização dos processos.
 void initBarDisplay(int a, int b,   char* v)
 {
   for (int i = a; i <= b; i = i + 5)
@@ -488,4 +520,41 @@ void initBarDisplay(int a, int b,   char* v)
     Heltec.display->display();
     delay(100);
   }
+}
+
+//Função de callback da ISR do WiFi.
+void WiFiISRCallback()
+{
+  //Variável para analisar a task de maior prioridade
+  BaseType_t xHighPriorityTask = pdTRUE;
+
+  //Variáveis para analisar o tempo de acionamento do botão.
+  static unsigned long lastTime = 0;
+  unsigned long newTime = millis();
+
+  //Analisa o tempo de deboucing do botão para ISR
+  if (newTime - lastTime < 50) {}
+  else
+  {
+    //Libera o semáforo binário para a task funcionar.
+    xSemaphoreGiveFromISR(WiFiResetSemaphore, &xHighPriorityTask);
+
+    //Realiza a troca de contexto, fazendo a tarefa com maior prioridade funcionar.
+    if (xHighPriorityTask == pdTRUE)
+    {
+      portYIELD_FROM_ISR();
+    }
+  }
+}
+
+//Exibir mensagem de erro no display.
+void errorMessage(uint8_t erroTxt, uint8_t TimeDelay)
+{
+  Heltec.display->clear();
+  Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
+  Heltec.display->drawXbm(32, 0, erro_width, erro_height, erro_bits);
+  Heltec.display->setFont(ArialMT_Plain_10);
+  Heltec.display->drawString(37, 54, "Error " + String(erroTxt));
+  Heltec.display->display();
+  delay(TimeDelay);
 }
