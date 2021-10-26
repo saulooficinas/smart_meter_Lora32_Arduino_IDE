@@ -47,18 +47,18 @@ struct sensorRef
 //PROCEDIMENTOS
 void initDisplay();
 void initFreeRTOS();
-void printDisplay(float a, float b);
+void printDisplay(float protoData, float refData);
 void initSaidas();
 void initWiFi();
 void creditsProto();
-void initBarDisplay(int a, int b, char* v);
+void initBarDisplay(int iniLoad, int finLoad, char* infChar);
 void errorMessage(uint8_t erroTxt, uint8_t TimeDelay);
 
 //Funções de retorno float
 float readPrototipo();
 float readRefSensor();
-float transUnit(float d);
-float difValues(float a, float b);
+float transUnit(float protoData);
+float difValues(float valueA, float valueB);
 
 //Funções de chamada das ISR
 void WiFiISRCallback();
