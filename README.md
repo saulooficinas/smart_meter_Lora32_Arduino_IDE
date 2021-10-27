@@ -90,6 +90,10 @@ Procedimento utilizado para mostrar mensagem de erro. Tem como principal funçã
 
 **- Parâmetros:**
  - **erroTxt:** código de Erro que irá aparecer na tela do display;
+      - 404: Problema ao conectar com o Host;
+      - 401: Erro ao salvar o arquivo via php;
+      - 425: Client Timeout ao enviar dados;
+      - 666 Problema ao criar as tarefas do freeRTOS;
  - **TimeDelay:** Tempo de exibição da informação no display.
 
 1.9) **configModeCallback(WiFiManager *myWiFiManager)**
