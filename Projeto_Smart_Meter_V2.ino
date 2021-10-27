@@ -351,7 +351,6 @@ void vTaskMySQL(void* pvParamaters)
 void vTaskWiFiReset(void* pvParamaters)
 {
   (void) pvParamaters;
-  uint8_t deboucing = 0;
 
   while (1)
   {
