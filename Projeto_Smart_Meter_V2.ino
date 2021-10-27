@@ -6,7 +6,7 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 26/10/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 27/10/2021 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -22,7 +22,7 @@
   |----------------|----------------|-------------------|------------------------------------------|
   |-vTaskWiFiReset |      00        |         02        | Chama a rotina de reconfigurar WiFi      |
   |----------------|----------------|-------------------|------------------------------------------|
-XX|-vTaskRefSensor |      01        |         04        | Leitura/tratamento da ISR do sensor      |
+  XX|-vTaskRefSensor |      01        |         04        | Leitura/tratamento da ISR do sensor      |
 ****************************************************************************************************
 
 
@@ -42,6 +42,12 @@ XX|-vTaskRefSensor |      01        |         04        | Leitura/tratamento da 
 
     BUG ATUAL:
 
+    Necessidades:
+    - Comunicação Serial com Arduino;
+    - Interrupção para sensor de vazão;
+    - Controle da ponta H;
+
+    
   ==================================|| INCLUDES DAS BIBLIOTECAS || ===============================*/
 
 //Bibliotecas para utilizar o display OLED
@@ -100,7 +106,7 @@ void setup() {
   Serial.begin(115200);
 
   //Gerando interrupções
-  attachInterrupt(digitalPinToInterrupt(pin_ISR_WiFi), WiFiISRCallback, RISING);
+  //attachInterrupt(digitalPinToInterrupt(pin_ISR_WiFi), WiFiISRCallback, RISING);
   //attachInterrupt(digitalPinToInterrupt(pin_ISR_Ref), ISR, RISING)
 
   //Funções para inicializar os equipamentos.
@@ -147,7 +153,7 @@ void initFreeRTOS()
     if (returnSensor != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1. Não foi possível gerar a tarefa do sensor.");
-      errorMessage(666,5000);
+      errorMessage(666, 5000);
       while (1);
     }
 
@@ -163,7 +169,7 @@ void initFreeRTOS()
     if (returnDisplay != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1. Não foi possível gerar a tarefa do Display.");
-      errorMessage(666,5000);
+      errorMessage(666, 5000);
       while (1);
     }
     returnMySQL = xTaskCreatePinnedToCore(
@@ -178,7 +184,7 @@ void initFreeRTOS()
     if (returnMySQL != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1.  Não foi possível gerar a tarefa do MySQL.");
-      errorMessage(666,5000);
+      errorMessage(666, 5000);
       while (1);
     }
 
@@ -193,7 +199,7 @@ void initFreeRTOS()
     if (returnWiFiReset != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1.  Não foi possível gerar a tarefa do WiFiReset.");
-      errorMessage(666,5000);
+      errorMessage(666, 5000);
       while (1);
     }
     Serial.println("[SMWF]: FreeRTOS iniciado com sucesso.");
@@ -201,7 +207,7 @@ void initFreeRTOS()
   else
   {
     Serial.println("[SMWF]: Não foi possível gerar as Tasks... Houve um erro!");
-    errorMessage(666,5000);
+    errorMessage(666, 5000);
     while (1);
   }
 }
@@ -330,7 +336,7 @@ void vTaskMySQL(void* pvParamaters)
           Serial.println();
           Serial.println("[MySQL_T]: Houve um erro ao salvar o dado. Verifique as configurações.");
           //Poderia ligar um led para me avisar que não está funcionando.
-          errorMessage(401,5000);
+          errorMessage(401, 5000);
         }
       }
 
@@ -511,13 +517,13 @@ void creditsProto()
 }
 
 //Barra de carregamento para indicar inicialização dos processos.
-void initBarDisplay(int iniLoad, int finLoad,   char* infChar)
+void initBarDisplay(int iniLoad, int finLoad, char* infChar)
 {
-  for (int i = iniLoad; i <= finLoad; i = iniLoad + 5)
+  for (int i = iniLoad; i <= finLoad; i = i + 5)
   {
     Heltec.display->clear();
-    Heltec.display->drawProgressBar(0, 40, 120, 10, i);
     Heltec.display->setTextAlignment(TEXT_ALIGN_CENTER);
+    Heltec.display->drawProgressBar(0, 40, 120, 10, i);
     Heltec.display->setFont(ArialMT_Plain_10);
     Heltec.display->drawString(60, 10, "INICIALIZANDO");
     Heltec.display->drawString(64, 25, String(i) + "%");
