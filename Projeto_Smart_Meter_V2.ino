@@ -147,6 +147,7 @@ void initFreeRTOS()
     if (returnSensor != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1. Não foi possível gerar a tarefa do sensor.");
+      errorMessage(666,5000);
       while (1);
     }
 
@@ -162,6 +163,7 @@ void initFreeRTOS()
     if (returnDisplay != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1. Não foi possível gerar a tarefa do Display.");
+      errorMessage(666,5000);
       while (1);
     }
     returnMySQL = xTaskCreatePinnedToCore(
@@ -176,6 +178,7 @@ void initFreeRTOS()
     if (returnMySQL != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1.  Não foi possível gerar a tarefa do MySQL.");
+      errorMessage(666,5000);
       while (1);
     }
 
@@ -190,6 +193,7 @@ void initFreeRTOS()
     if (returnWiFiReset != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1.  Não foi possível gerar a tarefa do WiFiReset.");
+      errorMessage(666,5000);
       while (1);
     }
     Serial.println("[SMWF]: FreeRTOS iniciado com sucesso.");
@@ -197,6 +201,7 @@ void initFreeRTOS()
   else
   {
     Serial.println("[SMWF]: Não foi possível gerar as Tasks... Houve um erro!");
+    errorMessage(666,5000);
     while (1);
   }
 }
@@ -306,6 +311,7 @@ void vTaskMySQL(void* pvParamaters)
         if (millis() - timeout > 5000) {
           Serial.println("[MySQL_T]: >>> Client Timeout !");
           client.stop();
+          errorMessage(425, 5000);
           return;
         }
       }
@@ -330,7 +336,6 @@ void vTaskMySQL(void* pvParamaters)
 
       Serial.println();
       Serial.println("[MySQL_T]:Fechando conexão...");
-      xQueueSend(xFilaDisplay, &sensorValue, portMAX_DELAY);
       vTaskDelay(pdMS_TO_TICKS(10000));//Espera 1 min até cadastrar um novo dado de vazão
     }
   }
