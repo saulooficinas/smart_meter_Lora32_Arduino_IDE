@@ -92,6 +92,13 @@ Procedimento utilizado para mostrar mensagem de erro. Tem como principal funçã
  - **erroTxt:** código de Erro que irá aparecer na tela do display;
  - **TimeDelay:** Tempo de exibição da informação no display.
 
+1.9) **configModeCallback(WiFiManager *myWiFiManager)**
+
+Função de Callback do WiFiManager para quando o AcessPoint é criado.
+
+1.9.1) **saveConfigCallback()**
+
+Função de Callback do WiFiManager para quando uma nova conexão WiFi for cadastrada.
 
 ### 2) **Funções com retorno float**
 2.1) **float readPrototipo()**
