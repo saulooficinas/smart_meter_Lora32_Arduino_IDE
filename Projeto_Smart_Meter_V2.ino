@@ -20,9 +20,9 @@
   |----------------|----------------|-------------------|------------------------------------------|
   |-vTaskMYSQL     |      01        |         02        |   Envia dados do protótipo para o MYSQL  |
   |----------------|----------------|-------------------|------------------------------------------|
-  |-vTaskWiFiReset |      00        |         02        | Chama a rotina de reconfigurar WiFi      |
+  |-vTaskWiFiReset |      00        |         04        | Chama a rotina de reconfigurar WiFi      |
   |----------------|----------------|-------------------|------------------------------------------|
-  XX|-vTaskRefSensor |      01        |         04        | Leitura/tratamento da ISR do sensor      |
+  XX|-vTaskRefSensor |      01        |         03        | Leitura/tratamento da ISR do sensor      |
 ****************************************************************************************************
 
 
