@@ -8,17 +8,18 @@
 #define max_int 100
 
 //Pino para configurar WiFi e interrupção do sensor de referência.
-#define pin_ISR_WiFi 36
+#define pin_ISR_WiFi 23
 #define pin_ISR_Ref 37
 
 //define saídas
 #define PIN_PROTOTIPO 32
 #define PIN_REF 33
 #define IP_SENSOR 1
+#define LED_ISR 13
 
 
 //Endereço host
-const char* host = "192.168.0.107";
+const char* host = "000.000.0.000"; //Aqui é o Host da sua rede WiFi. Para colocar o Host, irei gerar um processo ainda.
 
 //Chars improtantes
 char CharS[] = "iniciando saidas...";
@@ -60,5 +61,3 @@ float readRefSensor();
 float transUnit(float protoData);
 float difValues(float valueA, float valueB);
 
-//Funções de chamada das ISR
-void WiFiISRCallback();
