@@ -6,7 +6,7 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 27/10/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 06/11/2021 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -47,7 +47,7 @@
     - Interrupção para sensor de vazão;
     - Controle da ponta H;
 
-    
+
   ==================================|| INCLUDES DAS BIBLIOTECAS || ===============================*/
 
 //Bibliotecas para utilizar o display OLED
@@ -100,13 +100,38 @@ void configModeCallback(WiFiManager *myWiFiManager);
 //Função de callback para quando salvar as informações
 void saveConfigCallback();
 
+/*=============================|| Função da ISR ||=============================================*/
+//Função de callback da ISR do WiFi.
+void IRAM_ATTR WiFiISRCallback()
+{
+  //Variável para analisar a task de maior prioridade
+  BaseType_t xHighPriorityTask = pdTRUE;
+
+  //Variáveis para analisar o tempo de acionamento do botão.
+  static unsigned long lastTime = 0;
+  unsigned long newTime = millis();
+
+  Serial.println("INTERRUPÇÃO OCORREU!");
+  //Analisa o tempo de deboucing do botão para ISR
+  if (newTime - lastTime < 50) {}
+  else
+  {
+    xSemaphoreGiveFromISR(WiFiResetSemaphore, &xHighPriorityTask);
+
+    //Realiza a troca de contexto, fazendo a tarefa com maior prioridade funcionar.
+    if (xHighPriorityTask == pdTRUE)
+    {
+      portYIELD_FROM_ISR(); //Troca para a tarefa com maior prioridade
+    }
+  }
+}
 /*======================================|| SETUP ||=============================================*/
 void setup() {
   //Iniciando Serial
   Serial.begin(115200);
 
   //Gerando interrupções
-  //attachInterrupt(digitalPinToInterrupt(pin_ISR_WiFi), WiFiISRCallback, RISING);
+  attachInterrupt(digitalPinToInterrupt(pin_ISR_WiFi), WiFiISRCallback, RISING);
   //attachInterrupt(digitalPinToInterrupt(pin_ISR_Ref), ISR, RISING)
 
   //Funções para inicializar os equipamentos.
@@ -204,6 +229,7 @@ void initFreeRTOS()
     }
     Serial.println("[SMWF]: FreeRTOS iniciado com sucesso.");
   }
+
   else
   {
     Serial.println("[SMWF]: Não foi possível gerar as Tasks... Houve um erro!");
@@ -290,9 +316,16 @@ void vTaskMySQL(void* pvParamaters)
 
       if (!client.connect(host, httpPort))
       {
+        //Suspende as demais tarefas para evitar problemas.
         Serial.println("[MySQL_T]: Falha na conexão. Verifique o Host ou a Porta.");
+        Serial.println("[MySQL_T]: Outras tarefas foram pausadas para evitar erros de processamento.");
+        vTaskSuspend(vTaskDataSensorHandle);
+        vTaskSuspend(vTaskDisplayHandle);
+
         errorMessage(404, 5000);
-        return;
+
+        vTaskDelay(pdMS_TO_TICKS(3000));
+        ESP.restart();
       }
 
       //Pedindo o url para salvar dados
@@ -318,7 +351,8 @@ void vTaskMySQL(void* pvParamaters)
           Serial.println("[MySQL_T]: >>> Client Timeout !");
           client.stop();
           errorMessage(425, 5000);
-          return;
+          vTaskDelay(pdMS_TO_TICKS(3000));
+          ESP.restart();
         }
       }
 
@@ -339,10 +373,9 @@ void vTaskMySQL(void* pvParamaters)
           errorMessage(401, 5000);
         }
       }
-
       Serial.println();
       Serial.println("[MySQL_T]:Fechando conexão...");
-      vTaskDelay(pdMS_TO_TICKS(10000));//Espera 1 min até cadastrar um novo dado de vazão
+      vTaskDelay(pdMS_TO_TICKS(600000));//Espera 1 min até cadastrar um novo dado de vazão
     }
   }
 }
@@ -355,14 +388,23 @@ void vTaskWiFiReset(void* pvParamaters)
   while (1)
   {
     //Espera liberar o semaforo binário para liberar a operação de resetar WiFi.
-    xSemaphoreTake(WiFiResetSemaphore, portMAX_DELAY);
-    WiFiManager wifiManager;
-    if (!wifiManager.autoConnect("SMWF_AP", "12345678"))
+    if (xSemaphoreTake(WiFiResetSemaphore, portMAX_DELAY) == pdTRUE)
     {
-      Serial.println("[ISR_WIFI]: Falha ao reconectar.");
-      delay(2000);
-      ESP.restart();
+      //Suspendendo as demais tasks para evitar problemas de acesso e deixar apenas essa tarefa funcionando.
+      vTaskSuspend(vTaskDataSensorHandle);
+      vTaskSuspend(vTaskDisplayHandle);
+      vTaskSuspend(vTaskMySQLHandle);
+      Serial.println("[ISR_WIFI]: Suspendendo as demais tarefas para dar prioridade a esta.");
 
+      //Após pegar o semáforo, ele libera essa parte.
+      WiFiManager wifiManager;
+
+      if (!wifiManager.autoConnect("SMWF_AP", "12345678"))
+      {
+        Serial.println("[ISR_WIFI]: Falha ao reconectar.");
+        delay(2000);
+        ESP.restart();
+      }
     }
   }
 }
@@ -404,8 +446,12 @@ void initSaidas()
   //Configurando Pinos
   pinMode(PIN_PROTOTIPO, INPUT);
   pinMode(PIN_REF, INPUT);
-  pinMode(pin_ISR_WiFi, INPUT_PULLUP);
-  pinMode(pin_ISR_Ref, INPUT_PULLUP);
+  pinMode(pin_ISR_WiFi, INPUT);
+  pinMode(pin_ISR_Ref, INPUT);
+  pinMode(LED_ISR, OUTPUT);
+
+  //Desligando o pino da interrupção
+  digitalWrite(LED_ISR, LOW);
 
   //Debug
   Serial.println("[InitSaidas]: Pinos =>");
@@ -532,30 +578,6 @@ void initBarDisplay(int iniLoad, int finLoad, char* infChar)
   }
 }
 
-//Função de callback da ISR do WiFi.
-void WiFiISRCallback()
-{
-  //Variável para analisar a task de maior prioridade
-  BaseType_t xHighPriorityTask = pdTRUE;
-
-  //Variáveis para analisar o tempo de acionamento do botão.
-  static unsigned long lastTime = 0;
-  unsigned long newTime = millis();
-
-  //Analisa o tempo de deboucing do botão para ISR
-  if (newTime - lastTime < 50) {}
-  else
-  {
-    //Libera o semáforo binário para a task funcionar.
-    xSemaphoreGiveFromISR(WiFiResetSemaphore, &xHighPriorityTask);
-
-    //Realiza a troca de contexto, fazendo a tarefa com maior prioridade funcionar.
-    if (xHighPriorityTask == pdTRUE)
-    {
-      portYIELD_FROM_ISR();
-    }
-  }
-}
 
 //Exibir mensagem de erro no display.
 void errorMessage(uint8_t erroTxt, uint8_t TimeDelay)
