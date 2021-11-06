@@ -25,8 +25,12 @@ O código para a comunicação com o MySQL é via script em PHP utilizando um [W
 ## Materiais utilizados
 
 ## Bibliotecas utilizadas no projeto
-- 
+- [WiFi Manager](https://drive.google.com/file/d/1SWHUtYhCIDw9M1s6ZrNVSJ-hdCXBlVad/view);
+- Heltec WiFi Esp 32 LoRa;
+- WebServer (Presente no Arduino IDE)
+- DNSS (Presente no Arduino IDE)
 
+Obs: A instalação da biblioteca da Heltec foi a partir do video do [Fernado K](https://www.fernandok.com/2019/03/instalacao-do-esp32-lora-na-arduino-ide.html);
 ## Definição das funções utilizadas
 ### 1)  Procedimentos: 
    1.1) **void initDisplay()**
