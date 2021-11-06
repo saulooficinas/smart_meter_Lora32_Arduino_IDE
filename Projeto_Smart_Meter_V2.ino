@@ -375,7 +375,8 @@ void vTaskMySQL(void* pvParamaters)
       }
       Serial.println();
       Serial.println("[MySQL_T]:Fechando conexão...");
-      vTaskDelay(pdMS_TO_TICKS(600000));//Espera 1 min até cadastrar um novo dado de vazão
+      vTaskDelay(pdMS_TO_TICKS(600000));//Espera 60 min até cadastrar um novo dado de vazão
+       //Obs: APENAS deixei muito tempo para evitar encher o banco de dados que está conectado.
     }
   }
 }
