@@ -145,18 +145,18 @@ Procedimento ISR para recadastrar uma rede WiFi no Microcontrolador através do 
 
 ## Necessidades no momento
 
-- [ ] Montagem física dos sensores;
+- [ ] Montagem física do sensor;
 - [ ] Código para chamar o nome do ID acessado pelo WiFi Manager;
 - [ ] Gerar Tarefa de tratamento de Interrupções para o sensor de vazão de referência;
 - [x] Adicionar rotina de configurar WiFi;
-- [ ] Adicionar Rotina de Auto-Testes do Medidor;
+- [ ] Problemas com as leituras analógicas do sensor de tensão;
 
 
 ## PERMISSÃO PARA UTILIZAR CÓDIGOS POR TERCEIROS
 
  OBS: *Ninguém além da equipe e das empresas parceiras tem o direito de utilizar este código sem permissão e para benefício próprio. Caso algo assim ocorra, será sujeito a um tratamendo jurídico.*
  
- - [ ] TCC voltado ao projeto;
+ - [ ] TCC voltado ao projeto...;
  
  ## EQUIPE:
  * Prof. Me. Mahelvson Bazilio Chaves(Orientador);
