@@ -1,12 +1,12 @@
 /********************************************************************************************
-   PROGRAMA PRINCIPAL DO SMWF ( Smart Meter Water Flux) - OFICINAS 4.0 - Versão 1.1
+   PROGRAMA PRINCIPAL DO SMWF ( Smart Meter Water Flux) - OFICINAS 4.0 - Versão 1.2
    Instituição: Instituto Federal de Alagoas - Campus Palmeira dos índios
 
    Descrição: Ele irá fazer a leitura de eletrodos no fluído
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 06/11/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 17/11/2021 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -22,13 +22,12 @@
   |----------------|----------------|-------------------|------------------------------------------|
   |-vTaskWiFiReset |      00        |         04        | Chama a rotina de reconfigurar WiFi      |
   |----------------|----------------|-------------------|------------------------------------------|
-  XX|-vTaskRefSensor |      01        |         03        | Leitura/tratamento da ISR do sensor      |
 ****************************************************************************************************
 
 
     >> NÚCLEOS:
-        => APP_CPU_NUM = 00 = ARDUINO_RUNNING_CORE
-        => PRO_CPU_NUM = 01 = ARDUINO_RUNNING_CORE
+        => APP_CPU_NUM = 00 
+        => PRO_CPU_NUM = 01 
 
     >> Fórmula utilizada no Protótipo:
      V = U.(pi.D)/(4.k.B)
@@ -41,13 +40,14 @@
      B: Módulo do campo gerado pelas bobinas; (T)
 
     BUG ATUAL:
+    - Leitura do analogRead(PIN_PROTOTIPO) está fixado em um valor 4095 ( )
+    - Ao mantar a interrupção, o código nem inicia. ( ) 
+    - Task do Reset WiFi está com problema de sintexe. ( )
 
     Necessidades:
     - Comunicação Serial com Arduino;
     - Interrupção para sensor de vazão;
     - Controle da ponta H;
-
-
   ==================================|| INCLUDES DAS BIBLIOTECAS || ===============================*/
 
 //Bibliotecas para utilizar o display OLED
@@ -111,11 +111,11 @@ void IRAM_ATTR WiFiISRCallback()
   static unsigned long lastTime = 0;
   unsigned long newTime = millis();
 
-  Serial.println("INTERRUPÇÃO OCORREU!");
   //Analisa o tempo de deboucing do botão para ISR
   if (newTime - lastTime < 50) {}
   else
   {
+    //Libera o semaforo pela interrupção
     xSemaphoreGiveFromISR(WiFiResetSemaphore, &xHighPriorityTask);
 
     //Realiza a troca de contexto, fazendo a tarefa com maior prioridade funcionar.
@@ -129,18 +129,17 @@ void IRAM_ATTR WiFiISRCallback()
 void setup() {
   //Iniciando Serial
   Serial.begin(115200);
-
+  
   //Gerando interrupções
-  attachInterrupt(digitalPinToInterrupt(pin_ISR_WiFi), WiFiISRCallback, RISING);
-  //attachInterrupt(digitalPinToInterrupt(pin_ISR_Ref), ISR, RISING)
+  //attachInterrupt(digitalPinToInterrupt(pin_ISR_WiFi), WiFiISRCallback, RISING);
 
   //Funções para inicializar os equipamentos.
   Serial.println("[SMWF]: Configurando sistema...");
   initDisplay(); //Inicializa Display OLED
   initSaidas(); //Configura saídas
-  initWiFi(); //Inicia comunicação WiFi
-  initFreeRTOS(); //Inicia funções do FreeRTOS
+  initWiFi(); //Inicia comunicação WiFi  initFreeRTOS(); //Inicia funções do FreeRTOS
   Serial.println("[SMWF]: Configurações finalizadas!\n\n");
+
 }
 /*======================================|| loop ||==============================================*/
 void loop() {
@@ -242,33 +241,32 @@ void initFreeRTOS()
 //Tarefa de coletar dados
 void vTaskDataSensor(void* pvParamaters)
 {
-  (void) pvParamaters;
+  (void*) pvParamaters;
+  //Estrutura para enviar os dados
+  struct sensorRef sensorValue;
 
+  //Fazendo tratamento dos dados
+  float dados[max_int], acc, media;
+  
   while (1)
   {
-    //Estrutura para enviar os dados
-    struct sensorRef sensorValue;
-
-    //Fazendo tratamento dos dados
-    static float dados[max_int];
-
-    float acc = 0, media;
-
+    acc = 0;
+    //Limpa todos os dados anteriores.
     for (int i = 0; i < max_int; i++)
     {
-      dados[i] = readPrototipo();
+      dados[i] = analogRead(PIN_PROTOTIPO) * 6.1/160;
+      //Serial.println("Valor do dados [" + Streing(i) + "]:" + String(dados[i]));
       acc += dados[i];
     }
-
+    Serial.println("Valor acumulado:" + String(acc));
     media = acc / max_int; //Média dos valores tomados.
 
-    //Salvando dados na estrutura
-    sensorValue.pino[0] = PIN_REF;
-    sensorValue.valor[0] = readRefSensor();
 
-    sensorValue.pino[1] = PIN_PROTOTIPO;
-    sensorValue.valor[1] = transUnit(media);
-    Serial.println("[SENSOR_T]: Dados do Ref e do Protótipo: " + String(sensorValue.valor[0]) + " " + String(sensorValue.valor[1]));
+    sensorValue.pino = PIN_PROTOTIPO;
+    sensorValue.valor = transUnit(media);
+    //Serial.println("Pin_Proto:" + String(PIN_PROTOTIPO) + "; reaPrototipo():" + String(transUnit(media)));
+
+    //Serial.println("[SENSOR_T]: Dados do Ref e do Protótipo: REF:" + String(sensorValue.valor[0]) + ";" + "PROT:"+ String(sensorValue.valor[1]));
 
     //Enviado dados para a task de MySQL
     xQueueSend(xFilaMySQL, &sensorValue, portMAX_DELAY);
@@ -290,7 +288,7 @@ void vTaskDisplay(void* pvParamaters)
     if (xQueueReceive(xFilaDisplay, &sensorValue, portMAX_DELAY) == pdTRUE)
     {
       //Imprimindo valor no display.
-      printDisplay(sensorValue.valor[0], sensorValue.valor[1]);
+      printDisplay(sensorValue.valor);
     }
     vTaskDelay(3);
   }
@@ -306,7 +304,7 @@ void vTaskMySQL(void* pvParamaters)
     if (xQueueReceive(xFilaMySQL, &sensorValue, portMAX_DELAY) == pdTRUE)
     {
       //Conectando ao webcliente.
-      Serial.print("[MySQL_T]: Conectando com: ");
+      Serial.print("[MySQL_T]: Conectando com ");
       Serial.println(host);
 
       //Criando objeto WiFiCliente, para guardar dados.
@@ -331,7 +329,7 @@ void vTaskMySQL(void* pvParamaters)
       //Pedindo o url para salvar dados
       String url = "http://localhost/nodemcu/salvar.php?";
       url += "vazao=";
-      url += sensorValue.valor[1];
+      url += sensorValue.valor;
       url += "&id_medidor=";
       url +=  IP_SENSOR;
 
@@ -346,37 +344,47 @@ void vTaskMySQL(void* pvParamaters)
 
       //Verifica tempo de conexão
       unsigned long timeout = millis();
+
+      //Verifica se o cliente está respondendo a requisição
       while (client.available() == 0) {
         if (millis() - timeout > 5000) {
           Serial.println("[MySQL_T]: >>> Client Timeout !");
           client.stop();
           errorMessage(425, 5000);
-          vTaskDelay(pdMS_TO_TICKS(3000));
+          vTaskDelay(pdMS_TO_TICKS(10000));
           ESP.restart();
         }
       }
 
+      //O cliente responde, então analisa o que ele está respondendo.
       while (client.available()) {
+        //Lê os dados do cliente até encontrar o '\r' e salva em uma instring
         String line = client.readStringUntil('\r');
         //Serial.print(line);
 
-        if (line.indexOf("salvo_com_sucesso") != -1)
+        //Compara a mensagem deixada no cliente com o valor line
+        if (line.indexOf("salvo_com_sucesso_tabela_2") != -1)
         {
           Serial.println();
           Serial.println("[MySQL_T]: Arquivo foi salvo com sucesso.");
         }
-        else if (line.indexOf("erro_ao_salvar") != -1)
+        else if (line.indexOf("erro_ao_salvar_tabela_2") != -1)
         {
           Serial.println();
           Serial.println("[MySQL_T]: Houve um erro ao salvar o dado. Verifique as configurações.");
           //Poderia ligar um led para me avisar que não está funcionando.
           errorMessage(401, 5000);
         }
+        else
+        {
+          Serial.println();
+          Serial.println("[MySQL_T]: Houve um erro no servidor e dados errados foram encaminhados.");
+          errorMessage(411,5000);
+        }
       }
       Serial.println();
       Serial.println("[MySQL_T]:Fechando conexão...");
-      vTaskDelay(pdMS_TO_TICKS(600000));//Espera 60 min até cadastrar um novo dado de vazão
-       //Obs: APENAS deixei muito tempo para evitar encher o banco de dados que está conectado.
+      vTaskDelay(pdMS_TO_TICKS(60000));//Espera 1 min até cadastrar um novo dado de vazão
     }
   }
 }
@@ -398,6 +406,7 @@ void vTaskWiFiReset(void* pvParamaters)
       Serial.println("[ISR_WIFI]: Suspendendo as demais tarefas para dar prioridade a esta.");
 
       //Após pegar o semáforo, ele libera essa parte.
+      //Preciso modificar toda essa parte. Está confusa.
       WiFiManager wifiManager;
 
       if (!wifiManager.autoConnect("SMWF_AP", "12345678"))
@@ -426,16 +435,15 @@ void initDisplay()
 }
 
 //Função para imprimir dados no display
-void printDisplay(float protoData, float refData)
+void printDisplay(double protoData)
 {
   Heltec.display->clear();
   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
   Heltec.display->setFont(ArialMT_Plain_16);
   Heltec.display->drawString(30, 0, "<SMWF>");
   Heltec.display->setFont(ArialMT_Plain_10);
-  Heltec.display->drawString(0, 20, ">>Vazão: " + String(protoData) + " L/min");
-  Heltec.display->drawString(0, 30, ">>Ref: " + String(refData) + " L/min");
-  Heltec.display->drawString(0, 40, ">>Rede WiFi:\n" + String("Almeida/Aquino"));
+  Heltec.display->drawString(0, 30, ">Vazão: " + String(protoData) + " L/min");
+  Heltec.display->drawString(0, 50, ">Rede WiFi:\n");
   Heltec.display->display();
 }
 
@@ -446,18 +454,12 @@ void initSaidas()
 
   //Configurando Pinos
   pinMode(PIN_PROTOTIPO, INPUT);
-  pinMode(PIN_REF, INPUT);
   pinMode(pin_ISR_WiFi, INPUT);
-  pinMode(pin_ISR_Ref, INPUT);
-  pinMode(LED_ISR, OUTPUT);
 
-  //Desligando o pino da interrupção
-  digitalWrite(LED_ISR, LOW);
 
   //Debug
   Serial.println("[InitSaidas]: Pinos =>");
   Serial.println(">>Pin_Protótipo: " + String(PIN_PROTOTIPO));
-  Serial.println(">>Pin_Ref: " + String(PIN_REF));
   Serial.println(">>ISR_WiFi: " + String(pin_ISR_WiFi));
   Serial.println(">>IP_Sensor: " + String(IP_SENSOR));
 
@@ -526,22 +528,17 @@ void saveConfigCallback()
 //Função para ler dados do protótipo
 float readPrototipo()
 {
-  float value;
+  double value;
 
   //Obs: Seria 25/1023.0 caso fosse um Arduino
-  value = analogRead(PIN_PROTOTIPO) * (3.3 * 3.3) / (1023.0);
+  value = analogRead(PIN_PROTOTIPO) * (5) / (1023.0);
 
   return value;
 }
 
-//Função para saber o valor da leitura do sensor
-float readRefSensor()
-{
-  return 0;
-}
 
 //Função para transformar de tensão para litros.
-float transUnit(float protoData)
+double transUnit(float protoData)
 {
   return protoData * (MAT_PI * DIAM_TUBE) / (4 * CONST_SENSOR * CAMPO_BOBINA);
 }
@@ -579,9 +576,8 @@ void initBarDisplay(int iniLoad, int finLoad, char* infChar)
   }
 }
 
-
 //Exibir mensagem de erro no display.
-void errorMessage(uint8_t erroTxt, uint8_t TimeDelay)
+void errorMessage(int erroTxt, uint8_t TimeDelay)
 {
   Heltec.display->clear();
   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
