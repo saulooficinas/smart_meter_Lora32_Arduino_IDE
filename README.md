@@ -149,28 +149,34 @@ O programa é feito utilizando o FreeRTOS, que é um Sistema Operacional de temp
 Na função void setup() é realizado a configuração de WiFi e pinos do Microcontroladorr.
 ![Slide2](https://user-images.githubusercontent.com/90044415/142295066-4816dbb1-7905-4775-8dd6-a81f7c84f9b3.PNG)
 
+## Filas
 
-### **vTaskDataSensor**
+- **xFilaDisplay:** Fila responsável por enviar informações da vTaskDataSensor para a vTaskDisplay
+- **xFilaDisplay:** Fila responsável por enviar informações da vTaskDataSensor para a vTaskMySQL
+
+
+## Tarefas (Tasks)
+### **1- vTaskDataSensor**
 
 Tarefa responsável pela leitura e tratamento dos dados do sensor e compartilhar essas informações com o display pela xFilaDisplay e com a comunicação MySQL pela xFilaMySQL.
 ![Slide4](https://user-images.githubusercontent.com/90044415/142295085-3e1a6c96-dedc-4292-93fd-25bbff802081.PNG)
 
 
-### **vTaskDisplay**
+### **2- vTaskDisplay**
 
 Tarefa responsável por mostrar o dado na display do microcontrolador.
 
 ![Slide5](https://user-images.githubusercontent.com/90044415/142294893-1d72c636-75c2-4483-be8c-0d1cbcc66ce5.PNG)
 
 
-### **vTaskMySQL**
+### **3- vTaskMySQL**
 
 Tarefa Responsável por enviar os dados do sensor ao banco de dados do Web APP.
 
 ![Slide6](https://user-images.githubusercontent.com/90044415/142294921-f46fd98a-892b-417f-a35b-f82835bed615.PNG)
 
 
-## **vTaskWiFiReset**
+## **4- vTaskWiFiReset**
 
 Tarefa responsável por reconfigurar dados de WiFi no Microcontrolador.
 
