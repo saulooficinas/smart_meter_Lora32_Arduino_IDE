@@ -31,6 +31,7 @@ O código para a comunicação com o MySQL é via script em PHP utilizando um [W
 - DNSS (Presente no Arduino IDE)
 
 Obs: A instalação da biblioteca da Heltec foi a partir do video do [Fernado K](https://www.fernandok.com/2019/03/instalacao-do-esp32-lora-na-arduino-ide.html);
+
 ## Definição das funções utilizadas
 ### 1)  Procedimentos: 
    1.1) **void initDisplay()**
@@ -100,7 +101,7 @@ Procedimento utilizado para mostrar mensagem de erro. Tem como principal funçã
       - 666 Problema ao criar as tarefas do freeRTOS;
  - **TimeDelay:** Tempo de exibição da informação no display.
 
-1.9) **configModeCallback(WiFiManager *myWiFiManager)**
+1.9) **configModeCallback(WiFiManager myWiFiManager)**
 
 Função de Callback do WiFiManager para quando o AcessPoint é criado.
 
@@ -137,19 +138,63 @@ Função que calcula a diferença percentual de um Valor A em relação a um Val
 
 Procedimento ISR para recadastrar uma rede WiFi no Microcontrolador através do WiFiManager.
 
-## Definicão das tarefas utilizadas no projeto
+## **Contexto Global**
+
+O programa é feito utilizando o FreeRTOS, que é um Sistema Operacional de tempo real para microcontroladores. O sistema é configurado em 4 tasks (tarefas) responsáveis pela leitura, tratamento, visualização e compartilhamento dos dados coletados. Esse esquema pode ser visualizado pela imagem abaixo.
+
+![Slide3](https://user-images.githubusercontent.com/90044415/142294967-59a4ff23-ccfa-4670-ac6d-b69640ade7b2.PNG)
+
+## **void Setup**
+
+Na função void setup() é realizado a configuração de WiFi e pinos do Microcontroladorr.
+![Slide2](https://user-images.githubusercontent.com/90044415/142295066-4816dbb1-7905-4775-8dd6-a81f7c84f9b3.PNG)
 
 
-## Esquema de processamento de dados.
+### **vTaskDataSensor**
+
+Tarefa responsável pela leitura e tratamento dos dados do sensor e compartilhar essas informações com o display pela xFilaDisplay e com a comunicação MySQL pela xFilaMySQL.
+![Slide4](https://user-images.githubusercontent.com/90044415/142295085-3e1a6c96-dedc-4292-93fd-25bbff802081.PNG)
+
+
+### **vTaskDisplay**
+
+Tarefa responsável por mostrar o dado na display do microcontrolador.
+
+![Slide5](https://user-images.githubusercontent.com/90044415/142294893-1d72c636-75c2-4483-be8c-0d1cbcc66ce5.PNG)
+
+
+### **vTaskMySQL**
+
+Tarefa Responsável por enviar os dados do sensor ao banco de dados do Web APP.
+
+![Slide6](https://user-images.githubusercontent.com/90044415/142294921-f46fd98a-892b-417f-a35b-f82835bed615.PNG)
+
+
+## **vTaskWiFiReset**
+
+Tarefa responsável por reconfigurar dados de WiFi no Microcontrolador.
+
+![Slide7](https://user-images.githubusercontent.com/90044415/142294928-4a3c3c80-de07-423e-8824-73cfcbffee25.PNG)
+
+
+## Esquema do servidor
+
+O servidor utilizado é um computador conectado ao LocalHost, utilizando como base o XAMPP na porta 80. O servidor tem 4 arquivos .php responsáveis por conectar a um banco de dados e salvar dados de vazão ou algum novo medidor. O banco de dados é mantido pelo Heroku. O código pode ser visto pelo link do [WebServer mantido pelo XAMPP](https://github.com/saulooficinas/conexaoWebServer).
+
+![Slide8](https://user-images.githubusercontent.com/90044415/142295265-4b7b1064-cf69-4c09-939d-928eee313613.PNG)
+
 
 
 ## Necessidades no momento
 
 - [ ] Montagem física do sensor;
 - [ ] Código para chamar o nome do ID acessado pelo WiFi Manager;
-- [ ] Gerar Tarefa de tratamento de Interrupções para o sensor de vazão de referência;
-- [x] Adicionar rotina de configurar WiFi;
+- [X] Adicionar rotina de configurar WiFi;
 - [ ] Problemas com as leituras analógicas do sensor de tensão;
+- [X] Programa para utilizar um medidor de vazão como referência e manipular as bobinas;
+- [ ] Atualizar index.php;
+
+## Circuito das Bobinas do Projeto.
 
 
 ## PERMISSÃO PARA UTILIZAR CÓDIGOS POR TERCEIROS
@@ -166,3 +211,5 @@ Procedimento ISR para recadastrar uma rede WiFi no Microcontrolador através do 
  * Saulo (Cursando 2º período de  Eng. Elétrica e finalizando Técnico em Elétrotécnica);
  * Jéssica Barros (Cursando Eng. Cívil):
  * Emanuel (Cursando Médio Técnico em Eletrotécnica);
+
+## Apoiadores.
