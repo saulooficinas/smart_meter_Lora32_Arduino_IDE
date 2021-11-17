@@ -178,7 +178,7 @@ Tarefa Responsável por enviar os dados do sensor ao banco de dados do Web APP.
 
 ## **4- vTaskWiFiReset**
 
-Tarefa responsável por reconfigurar dados de WiFi no Microcontrolador.
+Tarefa responsável por reconfigurar dados de WiFi no Microcontrolador. Ela espera que a ISR WiFiISRCallback libere o semáforo WiFiResetSemaphore para que ela possa funcionar.
 
 ![Slide7](https://user-images.githubusercontent.com/90044415/142294928-4a3c3c80-de07-423e-8824-73cfcbffee25.PNG)
 
