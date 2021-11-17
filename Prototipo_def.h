@@ -1,5 +1,5 @@
 // Defines de variáveis.
-#define CAMPO_BOBINA 10
+#define CAMPO_BOBINA 0.006
 #define DIAM_TUBE 0.06
 #define MAT_PI 3.1415926536
 #define CONST_SENSOR 1
@@ -8,18 +8,15 @@
 #define max_int 100
 
 //Pino para configurar WiFi e interrupção do sensor de referência.
-#define pin_ISR_WiFi 23
-#define pin_ISR_Ref 37
+#define pin_ISR_WiFi 13
 
 //define saídas
-#define PIN_PROTOTIPO 32
-#define PIN_REF 33
+#define PIN_PROTOTIPO 34
 #define IP_SENSOR 1
-#define LED_ISR 13
 
 
 //Endereço host
-const char* host = "000.000.0.000"; //Aqui é o Host da sua rede WiFi. Para colocar o Host, irei gerar um processo ainda.
+const char* host = "192.168.0.109";
 
 //Chars improtantes
 char CharS[] = "iniciando saidas...";
@@ -35,10 +32,10 @@ char senhaWM[] = "12345678";
 struct sensorRef
 {
   //Endereço dos pinos
-  uint8_t pino[2];
+  uint8_t pino;
 
   //Valor encontrado neste pino
-  float valor[2];
+  double valor;
 };
 
 //Obs: 0 -> Ref
@@ -48,16 +45,25 @@ struct sensorRef
 //PROCEDIMENTOS
 void initDisplay();
 void initFreeRTOS();
-void printDisplay(float protoData, float refData);
+void printDisplay(float protoData);
 void initSaidas();
 void initWiFi();
 void creditsProto();
 void initBarDisplay(int iniLoad, int finLoad, char* infChar);
-void errorMessage(uint8_t erroTxt, uint8_t TimeDelay);
+void errorMessage(int erroTxt, uint8_t TimeDelay);
 
 //Funções de retorno float
 float readPrototipo();
-float readRefSensor();
-float transUnit(float protoData);
+
+double transUnit(float protoData);
 float difValues(float valueA, float valueB);
 
+/*======================|| CÓDIGOS DE ERROS CRÍTICOS ||============================*/
+/*
+  404: Problema com o Host;
+  401: Erro ao salvar arquivo;
+  666: Problema ao criar tarefas do freeRTOS;
+  425: ClientTimeout ao enviar dados.
+  411: Erro no servidor
+  
+*/ 
