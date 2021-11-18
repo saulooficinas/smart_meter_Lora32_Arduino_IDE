@@ -114,18 +114,14 @@ Função de Callback do WiFiManager para quando uma nova conexão WiFi for cadas
 
 Função que retorna o valor da leitura do sensor no pino digital configurado no microcontrolador.
 
-2.2) **float readRefSensor()**
-
-Função que retorna o valor de vazão captado pelo sensor de referência.
-
-2.3) **float transUnit(float protoData)**
+2.2) **float transUnit(float protoData)**
 
 Função que transforma o valor em L/min.
 
 **- Parâmetros:**
    - **protoData:** Valor que será transformado em L/min.
 
-2.4) **float difValues(float valueA, float valueB)**
+2.3) **float difValues(float valueA, float valueB)**
 
 Função que calcula a diferença percentual de um Valor A em relação a um Valor B.
 
