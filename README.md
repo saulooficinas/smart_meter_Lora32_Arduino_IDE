@@ -217,5 +217,6 @@ O servidor utilizado é um computador conectado ao LocalHost, utilizando como ba
  * Saulo (Cursando 2º período de  Eng. Elétrica e finalizando Técnico em Elétrotécnica);
  * Jéssica Barros (Cursando Eng. Cívil):
  * Emanuel (Cursando Médio Técnico em Eletrotécnica);
+ * Viviane (@Vivi-maker) (Cursando Médio Técnico em Informática);
 
 ## Apoiadores.
