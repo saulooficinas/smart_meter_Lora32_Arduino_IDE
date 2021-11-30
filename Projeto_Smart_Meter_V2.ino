@@ -42,14 +42,13 @@
      B: Módulo do campo gerado pelas bobinas; (T)
 
     BUG ATUAL:
-    - Leitura do analogRead(PIN_PROTOTIPO) está fixado em um valor 4095 ( )
     - Ao mantar a interrupção, o código nem inicia. ( )
     - Task do Reset WiFi está com problema de sintexe. ( )
 
-    Necessidades:
-    - Comunicação Serial com Arduino;
-    - Interrupção para sensor de vazão;
-    - Controle da ponta H;
+    NECESSIDADE:
+    - Corrigir problema na tarefa de resetar WiFi
+    - Buscar forma de dar o nome da rede concetada.
+    
   ==================================|| INCLUDES DAS BIBLIOTECAS || ===============================*/
 
 //Bibliotecas para utilizar o display OLED
