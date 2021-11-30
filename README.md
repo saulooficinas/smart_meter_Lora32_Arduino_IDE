@@ -109,6 +109,41 @@ Função de Callback do WiFiManager para quando o AcessPoint é criado.
 
 Função de Callback do WiFiManager para quando uma nova conexão WiFi for cadastrada.
 
+1.10) **initPWMbobinas()**
+
+Função para iniciar a configuração do driver mcpwm do esp32, para controlar, através de uma ponte H, as bobinas.
+
+### Funções static void
+
+1.11) **bobina_ascendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num, float duty_cicle)**
+
+Função responsável para manter as bobinas de campo mantendo um campo no sentido ascendnete.
+
+**-Parâmetros:**
+- **mcpwm_num:** unidade mcpwm que será controlada.
+- **timer_num:** unidade de timer utilizada como referência.
+- **duty_cicle:** duração do ciclo PWM.
+      
+1.12) **bobina_descendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num, float duty_cicle)**
+
+Função responsável para manter as bobinas de campo mantendo um campo no sentido descendente.
+**-Parâmetros:**
+- **mcpwm_num:** unidade mcpwm que será controlada.
+- **timer_num:** unidade de timer utilizada como referência.
+- **duty_cicle:** duração do ciclo PWM.
+
+
+1.13) **bobina_desligada(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num)**
+
+Desliga a bobina.
+
+**-Parâmetros:**
+- **mcpwm_num:** unidade mcpwm que será controlada.
+- **timer_num:** unidade de timer utilizada como referência.
+
+
+          
+
 ### 2) **Funções com retorno float**
 2.1) **float readPrototipo()**
 
@@ -119,6 +154,7 @@ Função que retorna o valor da leitura do sensor no pino digital configurado no
 Função que transforma o valor em L/min.
 
 **- Parâmetros:**
+   
    - **protoData:** Valor que será transformado em L/min.
 
 2.3) **float difValues(float valueA, float valueB)**
