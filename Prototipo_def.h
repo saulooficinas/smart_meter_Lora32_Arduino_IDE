@@ -15,6 +15,10 @@
 #define IP_SENSOR 1
 
 
+//Definido pinos do PWM
+#define GPIO_PWM0A_OUT 12
+#define GPIO_PWM0B_OUT 14
+
 //Endereço host
 const char* host = "192.168.0.109";
 
@@ -48,15 +52,22 @@ void initFreeRTOS();
 void printDisplay(float protoData);
 void initSaidas();
 void initWiFi();
+void initPWMbobinas();
 void creditsProto();
 void initBarDisplay(int iniLoad, int finLoad, char* infChar);
 void errorMessage(int erroTxt, uint8_t TimeDelay);
 
 //Funções de retorno float
 float readPrototipo();
-
 double transUnit(float protoData);
 float difValues(float valueA, float valueB);
+
+
+//Funções de controlo das bobinas.
+static void bobina_ascendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t, float duty_cicle);
+static void bobina_descendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t, float duty_cicle);
+static void bobina_desligada(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num);
+
 
 /*======================|| CÓDIGOS DE ERROS CRÍTICOS ||============================*/
 /*
