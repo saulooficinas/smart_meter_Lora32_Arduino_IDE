@@ -68,7 +68,7 @@
 #include <DNSServer.h>
 #include <WebServer.h>
 
-/*================================|| SE E SENÃO ||==============================================*/
+/*=======================|| PRECOMPILADOR PARA NÚCLEO ||========================================*/
 //Obs: Necessário para rodas as funções em mais de um núcleo..
 #if CONFIG_FREERTOS_UNICORE
 #define ARDUINO_RUNNING_CORE 0
