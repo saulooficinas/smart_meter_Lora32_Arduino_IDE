@@ -138,12 +138,14 @@ Procedimento ISR para recadastrar uma rede WiFi no Microcontrolador através do 
 
 O programa é feito utilizando o FreeRTOS, que é um Sistema Operacional de tempo real para microcontroladores. O sistema é configurado em 4 tasks (tarefas) responsáveis pela leitura, tratamento, visualização e compartilhamento dos dados coletados. Esse esquema pode ser visualizado pela imagem abaixo.
 
-![Slide3](https://user-images.githubusercontent.com/90044415/142294967-59a4ff23-ccfa-4670-ac6d-b69640ade7b2.PNG)
+![Esquema do Programa](https://user-images.githubusercontent.com/90044415/144109061-8859e3e1-3cdc-47e7-9b6e-313140794d12.png)
 
 ## **void Setup**
 
 Na função void setup() é realizado a configuração de WiFi e pinos do Microcontroladorr.
-![Slide2](https://user-images.githubusercontent.com/90044415/142295066-4816dbb1-7905-4775-8dd6-a81f7c84f9b3.PNG)
+![setup](https://user-images.githubusercontent.com/90044415/144109469-b2a2fca6-da7c-46aa-8e55-ae0865f9a7e3.png)
+
+
 
 ## Filas
 
@@ -178,6 +180,9 @@ Tarefa responsável por reconfigurar dados de WiFi no Microcontrolador. Ela espe
 
 ![Slide7](https://user-images.githubusercontent.com/90044415/142294928-4a3c3c80-de07-423e-8824-73cfcbffee25.PNG)
 
+## **5-vTaskBobinas**
+
+Tarefa responsável por controlar a polaridade das bobinas do projeto, controlando uma ponte H.
 
 ## Esquema do servidor
 
