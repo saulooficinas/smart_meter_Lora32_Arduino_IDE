@@ -220,6 +220,8 @@ Tarefa responsável por reconfigurar dados de WiFi no Microcontrolador. Ela espe
 
 Tarefa responsável por controlar a polaridade das bobinas do projeto, controlando uma ponte H.
 
+![vTaskBobinas](https://user-images.githubusercontent.com/90044415/144139417-e3bbddd6-a1ae-4606-ad0b-51b4d4b9cb3b.png)
+
 ## Esquema do servidor
 
 O servidor utilizado é um computador conectado ao LocalHost, utilizando como base o XAMPP na porta 80. O servidor tem 4 arquivos .php responsáveis por conectar a um banco de dados e salvar dados de vazão ou algum novo medidor. O banco de dados é mantido pelo Heroku. O código pode ser visto pelo link do [WebServer mantido pelo XAMPP](https://github.com/saulooficinas/conexaoWebServer).
