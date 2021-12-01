@@ -233,12 +233,12 @@ O servidor utilizado é um computador conectado ao LocalHost, utilizando como ba
 ## Necessidades no momento
 
 - [ ] Montagem física do sensor;
-- [ ] Código para chamar o nome do ID acessado pelo WiFi Manager;
+- [X] Código para chamar o nome do ID acessado;
 - [X] Adicionar rotina de configurar WiFi;
-- [ ] Problemas com as leituras analógicas do sensor de tensão;
+- [X] Problemas com as leituras analógicas do sensor de tensão;
 - [X] Programa para utilizar um medidor de vazão como referência e manipular as bobinas;
 - [ ] Atualizar index.php;
-
+- [ ] Configurar porta analógica;
 ## Circuito das Bobinas do Projeto.
 
 
