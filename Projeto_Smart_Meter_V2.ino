@@ -6,7 +6,7 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 30/11/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 03/12/2021 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -585,34 +585,34 @@ float readPrototipo()
   double value;
 
   /*
-    Foi aplicado um divisor de tensão em que Vout= Vin*2/3, assim, alimento o sensor com 5V, e posso pegar tensões de 0 a 25V
-    Como o sensor tem fator Vout=Vin/5, a tensão real (Vr) com o Vout pode ser encontrado assim:
+    O valor do sensor é 1/5 do valor real. Quando o sensor é alimentado com 3.3 V, ele terá uma leitura de 0
+    a 16,5 V.
 
-    Vout = 2.Vr/(3*5) = 2.Vr/15
-
+    Vout = Vin/5;
+    
     Como a tensão associada é com 12 bits de resolução. A tensão mínima captada pelo ESP32 é de;
 
     Resolução = 3,3 V /2^12 ~= 0.8057 mV
 
-    Para isso, é necessário uma tensão de, no mínimo 6,043 mV nos eletrodos.
+    Como o valor de entrada é 5 vezes maior, então é preciso de uma tensão mínima de :
+    Vmin = Vmin(sensor)*5 = 0.0857 mV * 5 = 4,0285 mV
+    
+    O ESP transforma dados de 0 a 3,3 V em valores analógicos de 0 a 4095.
 
-    3,3 V ----> 4095
-    Vout -----> Sinal
+    3.3 V ==> 4095
+    x V => y
 
-    Vout = 2Vr/15
+    x = 3.3 Y /4095
 
-    3,3V ---> 4095
-    2Vr/15 ---> Sinal
+    Agora, sabendo que x é o Vout do sensor, então:
 
-    Vr.2.4095/15 = Sinal*3.3 => Vr = 3.3*15*Sinal/(2*4095) = Sinal * 3.3 / 546;
-
-    Vmin(Medição) = 6.043 mV
-
-    V(real)=Sinal.10/(1638)
+    Vreal = 5*Vout = 5*3.3*Sinal/4095;
+    
+    V(real)=Sinal.16,5/(4095)
 
     => Adicionar na documentação.
   */
-  value = analogRead(PIN_PROTOTIPO) * 10 / 1638;
+  value = analogRead(PIN_PROTOTIPO) * 16,5 / 4095;
 
   return value;
 }
