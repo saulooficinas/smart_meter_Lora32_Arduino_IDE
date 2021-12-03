@@ -610,7 +610,7 @@ float readPrototipo()
     
     V(real)=Sinal.16,5/(4095)
 
-    => Adicionar na documentação.
+    Obs: Esse valor dá um valor próximo do real. É preciso ajustar esse valor para dar o real.
   */
   value = analogRead(PIN_PROTOTIPO) * 16,5 / 4095;
 
