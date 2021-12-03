@@ -6,7 +6,7 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 30/11/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 03/12/2021 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -47,8 +47,7 @@
 
     NECESSIDADE:
     - Corrigir problema na tarefa de resetar WiFi
-    - Buscar forma de dar o nome da rede concetada.
-    
+
   ==================================|| INCLUDES DAS BIBLIOTECAS || ===============================*/
 
 //Bibliotecas para utilizar o display OLED
@@ -67,8 +66,9 @@
 #include <WiFiManager.h>
 #include <DNSServer.h>
 #include <WebServer.h>
+#include <SPI.h>
 
-/*=======================|| PRECOMPILADOR PARA NÚCLEO ||========================================*/
+/*================================|| SE E SENÃO ||==============================================*/
 //Obs: Necessário para rodas as funções em mais de um núcleo..
 #if CONFIG_FREERTOS_UNICORE
 #define ARDUINO_RUNNING_CORE 0
@@ -212,6 +212,7 @@ void initFreeRTOS()
                     , &vTaskMySQLHandle //Handle da tarefa
                     , 1); //Utilizará o segundo núcleo de processamento.
 
+
     if (returnMySQL != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1.  Não foi possível gerar a tarefa do MySQL.");
@@ -227,6 +228,8 @@ void initFreeRTOS()
                         , 4 //Prioridade
                         , &vTaskWiFiResetHandle //Handle da tarefa
                         , 0); //Utilizará o primeiro núcleo de processamento.
+
+
     if (returnWiFiReset != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1.  Não foi possível gerar a tarefa do WiFiReset.");
@@ -243,6 +246,7 @@ void initFreeRTOS()
                      , &vTaskBobinasHandle // Handle da tarefa
                      , 0); //Utiliza o primeiro núcleo de processamento
 
+
     if (returnBobina != pdTRUE)
     {
       Serial.println("[SMWF]: Erro 1.  Não foi possível gerar a tarefa do vTaskBobina..");
@@ -250,6 +254,8 @@ void initFreeRTOS()
       while (1);
     }
     Serial.println("[SMWF]: FreeRTOS iniciado com sucesso.");
+
+
   }
 
   else
@@ -277,12 +283,11 @@ void vTaskDataSensor(void* pvParamaters)
     //Limpa todos os dados anteriores.
     for (int i = 0; i < max_int; i++)
     {
-       // O vetor faz a leitura do protótipo
       dados[i] = readPrototipo();
       //Serial.println("Valor do dados [" + Streing(i) + "]:" + String(dados[i]));
       acc += dados[i];
     }
-    Serial.println("Valor acumulado:" + String(acc));
+    //Serial.println("Valor acumulado:" + String(acc));
     media = acc / max_int; //Média dos valores tomados.
 
 
@@ -327,6 +332,9 @@ void vTaskMySQL(void* pvParamaters)
     sensorRef sensorValue;
     if (xQueueReceive(xFilaMySQL, &sensorValue, portMAX_DELAY) == pdTRUE)
     {
+      //Ele mesmo pega o IP do host pelo gateway, sem a necessidade de colocalo.
+      IPAddress host = WiFi.gatewayIP();
+
       //Conectando ao webcliente.
       Serial.print("[MySQL_T]: Conectando com ");
       Serial.println(host);
@@ -339,7 +347,7 @@ void vTaskMySQL(void* pvParamaters)
       if (!client.connect(host, httpPort))
       {
         //Suspende as demais tarefas para evitar problemas.
-        Serial.println("[MySQL_T]: Falha na conexão. Verifique o Host ou a Porta.");
+        Serial.println("[MySQL_T]: Falha na conexão. Verifique o Host ou a Porta. Verifique se o XAMPP está ligado!");
         Serial.println("[MySQL_T]: Outras tarefas foram pausadas para evitar erros de processamento.");
         vTaskSuspend(vTaskDataSensorHandle);
         vTaskSuspend(vTaskDisplayHandle);
@@ -389,29 +397,21 @@ void vTaskMySQL(void* pvParamaters)
         //Compara a mensagem deixada no cliente com o valor line
         if (line.indexOf("salvo_com_sucesso_tabela_2") != -1)
         {
-          Serial.println();
           Serial.println("[MySQL_T]: Arquivo foi salvo com sucesso.");
         }
         else if (line.indexOf("erro_ao_salvar_tabela_2") != -1)
         {
-          Serial.println();
           Serial.println("[MySQL_T]: Houve um erro ao salvar o dado. Verifique as configurações.");
           //Poderia ligar um led para me avisar que não está funcionando.
           errorMessage(401, 5000);
         }
-        else
-        {
-          Serial.println();
-          Serial.println("[MySQL_T]: Houve um erro no servidor e dados errados foram encaminhados.");
-          errorMessage(411, 5000);
-        }
       }
-      Serial.println();
-      Serial.println("[MySQL_T]:Fechando conexão...");
-      vTaskDelay(pdMS_TO_TICKS(60000));//Espera 1 min até cadastrar um novo dado de vazão
     }
+    Serial.println("[MySQL_T]:Fechando conexão...\n");
+    vTaskDelay(pdMS_TO_TICKS(60000));//Espera 1 min até cadastrar um novo dado de vazão
   }
 }
+
 
 //Tarefa para resetar o WiFi (Precisa de semáforo!)
 void vTaskWiFiReset(void* pvParamaters)
@@ -427,6 +427,8 @@ void vTaskWiFiReset(void* pvParamaters)
       vTaskSuspend(vTaskDataSensorHandle);
       vTaskSuspend(vTaskDisplayHandle);
       vTaskSuspend(vTaskMySQLHandle);
+
+
       Serial.println("[ISR_WIFI]: Suspendendo as demais tarefas para dar prioridade a esta.");
 
       //Após pegar o semáforo, ele libera essa parte.
@@ -439,6 +441,12 @@ void vTaskWiFiReset(void* pvParamaters)
         delay(2000);
         ESP.restart();
       }
+
+      //Retorna as tarefas.
+      vTaskResume(vTaskDataSensorHandle);
+      vTaskResume(vTaskDisplayHandle);
+      vTaskResume(vTaskMySQLHandle);
+
     }
   }
 }
@@ -446,15 +454,12 @@ void vTaskWiFiReset(void* pvParamaters)
 //Tarefa de controle das bobinas.
 void vTaskBobinas(void* pvParamaters)
 {
-   
-   //Obs: Aqui o código pode ser modificado. Esse controle é automatizado pelo microcontrolador.
   while (1)
   {
-     // campo ascendente por 3 segundos
-    bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
+    //O código aqui é de exemplo, vai ser modificado mediante as necessidades do projeto.
+    bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);//Gira o motor no sentido horário
     vTaskDelay(pdMS_TO_TICKS(3000));
-   
-     //Campo descendente por 3 segundos.
+
     bobina_descendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
     vTaskDelay(pdMS_TO_TICKS(3000));
 
@@ -486,8 +491,10 @@ void printDisplay(double protoData)
   Heltec.display->setFont(ArialMT_Plain_16);
   Heltec.display->drawString(30, 0, "<SMWF>");
   Heltec.display->setFont(ArialMT_Plain_10);
-  Heltec.display->drawString(0, 30, ">Vazão: " + String(protoData) + " L/min");
-  Heltec.display->drawString(0, 50, ">Rede WiFi:\n");
+  Heltec.display->drawString(0, 20, ">Vazão: " + String(protoData) + " L/min");
+  Heltec.display->drawString(0, 30, ">WiFi: " + String(WiFi.SSID()));
+  Heltec.display->drawString(0, 40, ">Bobina:");
+
   Heltec.display->display();
 }
 
@@ -663,7 +670,7 @@ void errorMessage(int erroTxt, uint8_t TimeDelay)
 //Inicia as configurações do controle PWM
 void initPWMbobinas()
 {
-  Serial.println("[SMWF]: Iniciando automação PWM");
+  //Serial.println("[SMWF]: Iniciando automação PWM");
   //mcpwm_gpio_init(unidade PWM 0, saida A, porta GPIO) => Instancia o MCPWMA para a porta GPIO_PWM0A_OUT
   mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, GPIO_PWM0A_OUT);
 
@@ -681,7 +688,7 @@ void initPWMbobinas()
 
   //Inicia(Unidade 0, Timer 0, Configuração PWM)
   mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);
-  Serial.println("[SMWF]: Finalizando automação PWM");
+  //Serial.println("[SMWF]: Finalizando automação PWM");
 }
 
 static void bobina_ascendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num, float duty_cicle)
