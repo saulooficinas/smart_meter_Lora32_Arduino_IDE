@@ -19,8 +19,6 @@
 #define GPIO_PWM0A_OUT 12
 #define GPIO_PWM0B_OUT 14
 
-//Endereço host
-const char* host = "192.168.0.109";
 
 //Chars improtantes
 char CharS[] = "iniciando saidas...";
@@ -64,8 +62,8 @@ float difValues(float valueA, float valueB);
 
 
 //Funções de controlo das bobinas.
-static void bobina_ascendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t, float duty_cicle);
-static void bobina_descendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t, float duty_cicle);
+static void bobina_ascendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num, float duty_cicle);
+static void bobina_descendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num, float duty_cicle);
 static void bobina_desligada(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num);
 
 
@@ -75,6 +73,5 @@ static void bobina_desligada(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num);
   401: Erro ao salvar arquivo;
   666: Problema ao criar tarefas do freeRTOS;
   425: ClientTimeout ao enviar dados.
-  411: Erro no servidor
-  
+ 
 */ 
