@@ -1,4 +1,5 @@
 // Defines de variáveis.
+//Obs: Esses dados são do experimento, e podem ( e devem) ser mudados dependendo da montagem.
 #define CAMPO_BOBINA 0.006
 #define DIAM_TUBE 0.06
 #define MAT_PI 3.1415926536
@@ -8,10 +9,10 @@
 #define max_int 100
 
 //Pino para configurar WiFi e interrupção do sensor de referência.
-#define pin_ISR_WiFi 13
+#define pin_ISR_WiFi 25
 
 //define saídas
-#define PIN_PROTOTIPO 34
+#define PIN_PROTOTIPO 33
 #define IP_SENSOR 1
 
 
