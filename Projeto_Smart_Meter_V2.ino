@@ -277,7 +277,8 @@ void vTaskDataSensor(void* pvParamaters)
     //Limpa todos os dados anteriores.
     for (int i = 0; i < max_int; i++)
     {
-      dados[i] = analogRead(PIN_PROTOTIPO) * 6.1 / 160;
+       // O vetor faz a leitura do protótipo
+      dados[i] = readPrototipo();
       //Serial.println("Valor do dados [" + Streing(i) + "]:" + String(dados[i]));
       acc += dados[i];
     }
@@ -445,28 +446,18 @@ void vTaskWiFiReset(void* pvParamaters)
 //Tarefa de controle das bobinas.
 void vTaskBobinas(void* pvParamaters)
 {
+   
+   //Obs: Aqui o código pode ser modificado. Esse controle é automatizado pelo microcontrolador.
   while (1)
   {
-    bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);//Gira o motor no sentido horário
+     // campo ascendente por 3 segundos
+    bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
     vTaskDelay(pdMS_TO_TICKS(3000));
-
+   
+     //Campo descendente por 3 segundos.
     bobina_descendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
     vTaskDelay(pdMS_TO_TICKS(3000));
 
-    bobina_desligada(MCPWM_UNIT_0, MCPWM_TIMER_0);//Para o motor.
-    vTaskDelay(pdMS_TO_TICKS(2000));
-
-    for (int i = 10; i <= 100; i++)
-    {
-      bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, i); //define ciclo de trabalho usando i
-      vTaskDelay(pdMS_TO_TICKS(200));
-    }
-
-    for (int i = 100; i >= 10; i--)
-    {
-      bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, i); //define ciclo de trabalho usando i
-      vTaskDelay(pdMS_TO_TICKS(200));
-    }
     vTaskDelay(1);
   }
 }
