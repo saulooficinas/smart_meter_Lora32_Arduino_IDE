@@ -6,7 +6,7 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 03/12/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 30/11/2021 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -151,6 +151,8 @@ void setup() {
 /*======================================|| loop ||==============================================*/
 void loop() {
   vTaskDelete(NULL); //Deletando a task loop.
+  //Serial.println(analogRead(PIN_PROTOTIPO));
+ //delay(500);
 }
 /*=====================================|| DEFINIÇÃO DAS FUNÇÕES ||==============================*/
 //Função para iniciar tasks e filas do FreeRTOS.
@@ -193,7 +195,7 @@ void initFreeRTOS()
                       , "TaskDisplay" //Nome para Debug
                       , configMINIMAL_STACK_SIZE + 1024 //Tamanho da memória reservado
                       , NULL //Parâmetro inicial
-                      , 1 //Prioridade da tarefa
+                      , 2 //Prioridade da tarefa
                       , &vTaskDisplayHandle //Handle  da tarefa
                       , 1); //Utilizará o segundo núcleo de processamento.
 
@@ -408,7 +410,7 @@ void vTaskMySQL(void* pvParamaters)
       }
     }
     Serial.println("[MySQL_T]:Fechando conexão...\n");
-    vTaskDelay(pdMS_TO_TICKS(60000));//Espera 1 min até cadastrar um novo dado de vazão
+    vTaskDelay(pdMS_TO_TICKS(10000));//Espera 1 min até cadastrar um novo dado de vazão
   }
 }
 
