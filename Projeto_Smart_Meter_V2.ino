@@ -6,7 +6,7 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 03/12/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 15/12/2021 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -46,7 +46,7 @@
     - Task do Reset WiFi está com problema de sintexe. ( )
 
     NECESSIDADE:
-    - Corrigir problema na tarefa de resetar WiFi
+    - Corrigir problema na tarefa de resetar WiFi pela interrupção ();
 
   ==================================|| INCLUDES DAS BIBLIOTECAS || ===============================*/
 
@@ -106,6 +106,10 @@ void configModeCallback(WiFiManager *myWiFiManager);
 //Função de callback para quando salvar as informações
 void saveConfigCallback();
 
+//Variáveis globais para amostragem (OBS: PODE MODIFICAR SE NÃO FUNCIONAR)
+volatile int data_sensor = 0;
+volatile unsigned long timer1 = 0;
+
 /*=============================|| Função da ISR ||=============================================*/
 //Função de callback da ISR do WiFi.
 void IRAM_ATTR WiFiISRCallback()
@@ -152,7 +156,7 @@ void setup() {
 void loop() {
   vTaskDelete(NULL); //Deletando a task loop.
   //Serial.println(analogRead(PIN_PROTOTIPO));
- //delay(500);
+  //delay(500);
 }
 /*=====================================|| DEFINIÇÃO DAS FUNÇÕES ||==============================*/
 //Função para iniciar tasks e filas do FreeRTOS.
@@ -277,37 +281,49 @@ void vTaskDataSensor(void* pvParamaters)
   struct sensorRef sensorValue;
 
   //Fazendo tratamento dos dados
-  float dados[max_int], acc, media;
+  //float dados[max_int], acc, media;
 
   while (1)
   {
-    acc = 0;
-    //Limpa todos os dados anteriores.
-    for (int i = 0; i < max_int; i++)
-    {
+    /*
+      acc = 0;
+      //Limpa todos os dados anteriores.
+      for (int i = 0; i < max_int; i++)
+      {
       dados[i] = readPrototipo();
       //Serial.println("Valor do dados [" + Streing(i) + "]:" + String(dados[i]));
       acc += dados[i];
-    }
-    //Serial.println("Valor acumulado:" + String(acc));
-    media = acc / max_int; //Média dos valores tomados.
+      }
+      //Serial.println("Valor acumulado:" + String(acc));
+      media = acc / max_int; //Média dos valores tomados.
+    */
 
+    //Capturando dados.
+    data_sensor = readPrototipo(); //Captura dados de tensão na entrada analógica;
+    samplingTime(); // Função que analisa se o tempo de amostragem passou e chama a função do filtro de média móvel, atualizando o buffer circular
 
+    //Seção de debug:
+    Serial.println("[DATA_t]: Leitura: " + String(data_sensor) + "// MovingAvarege:" + String(movingAverage(0)));
+
+    //Salvando dados na struct
     sensorValue.pino = PIN_PROTOTIPO;
-    sensorValue.valor = transUnit(media);
-    //Serial.println("Pin_Proto:" + String(PIN_PROTOTIPO) + "; reaPrototipo():" + String(transUnit(media)));
+    sensorValue.valor = transUnit(movingAverage(0));
 
-    //Serial.println("[SENSOR_T]: Dados do Ref e do Protótipo: REF:" + String(sensorValue.valor[0]) + ";" + "PROT:"+ String(sensorValue.valor[1]));
 
-    //Enviado dados para a task de MySQL
-    xQueueSend(xFilaMySQL, &sensorValue, portMAX_DELAY);
-    vTaskDelay(2);
+    //Seção de envio de dados.
+    /* O tempo de delay entre o display e o envio da MySQL é de 30 s.*/
+    xQueueSend(xFilaDisplay, &sensorValue, portMAX_DELAY);
 
     //Enviado dados para a task do Display
-    xQueueSend(xFilaDisplay, &sensorValue, portMAX_DELAY);
-    vTaskDelay(4);
+    xQueueSend(xFilaMySQL, &sensorValue, portMAX_DELAY);
+    vTaskDelay(1);
   }
 }
+
+/*
+ Obs: Os dados da função de filtro de média móvel precisam ser atualizados por alguma tarefa, então
+ é necessário que a tarefa do MySQL  ocorra em um tempo fixo.
+*/
 
 //Tarefa de imprimir no display
 void vTaskDisplay(void* pvParamaters)
@@ -458,14 +474,19 @@ void vTaskBobinas(void* pvParamaters)
 {
   while (1)
   {
-    //O código aqui é de exemplo, vai ser modificado mediante as necessidades do projeto.
-    bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);//Gira o motor no sentido horário
-    vTaskDelay(pdMS_TO_TICKS(3000));
+    /* Bobina oscilando
+      //O código aqui é de exemplo, vai ser modificado mediante as necessidades do projeto.
+      bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);//Gira o motor no sentido horário
+      vTaskDelay(pdMS_TO_TICKS(3000));
 
-    bobina_descendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
-    vTaskDelay(pdMS_TO_TICKS(3000));
+      bobina_descendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
+      vTaskDelay(pdMS_TO_TICKS(3000));
+    */
 
-    vTaskDelay(1);
+    //Bobina parada no sentido ascendente
+    bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
+
+    vTaskDelay(5);
   }
 }
 
@@ -589,14 +610,14 @@ float readPrototipo()
     a 16,5 V.
 
     Vout = Vin/5;
-    
+
     Como a tensão associada é com 12 bits de resolução. A tensão mínima captada pelo ESP32 é de;
 
     Resolução = 3,3 V /2^12 ~= 0.8057 mV
 
     Como o valor de entrada é 5 vezes maior, então é preciso de uma tensão mínima de :
     Vmin = Vmin(sensor)*5 = 0.0857 mV * 5 = 4,0285 mV
-    
+
     O ESP transforma dados de 0 a 3,3 V em valores analógicos de 0 a 4095.
 
     3.3 V ==> 4095
@@ -607,12 +628,14 @@ float readPrototipo()
     Agora, sabendo que x é o Vout do sensor, então:
 
     Vreal = 5*Vout = 5*3.3*Sinal/4095;
-    
+
     V(real)=Sinal.16,5/(4095)
 
     Obs: Esse valor dá um valor próximo do real. É preciso ajustar esse valor para dar o real.
   */
-  value = analogRead(PIN_PROTOTIPO) * 16,5 / 4095;
+
+  //Retorna valor da tensão.
+  value = analogRead(PIN_PROTOTIPO) * 16.5 / 4095;
 
   return value;
 }
@@ -725,4 +748,41 @@ static void bobina_desligada(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num)
 {
   mcpwm_set_signal_low(mcpwm_num, timer_num, MCPWM_OPR_A);//Desliga o sinal no operador A
   mcpwm_set_signal_low(mcpwm_num, timer_num, MCPWM_OPR_B);//Desliga o sinal no operador B
+}
+
+/*======================================|| FUNÇÕES DE LEITURA ||==================================================*/
+//OBS: Propenso a bug
+//Função de média móvel
+float movingAverage(bool update_output) { // A função de media movel trabalha com variavel estática, que salva as variaveis sem perder
+  static  int last_reads[max_int]; // Esse é o vetor que servirá como buffer circular
+  static  int Position = 0; // A posicao atual de leitura, que deverá ficar salva
+  static long Sum = 0; // A soma total do buffer circular
+  static float average = 0; // A media, que é a saída da função quando é chamada
+  static bool reset_vector = 1;  // A variavel para saber se é a primeira execução. Se for, ele zera todo o buffer circular.
+
+  if (reset_vector) { // Zerando todo o buffer circular, para que as subtrações das sobrescrição não atrapalhe o filtro
+    for (int i = 0; i <= max_int; i++) {
+      last_reads[i] = 0;
+    }
+    reset_vector = 0;
+    //    Serial.println("Não entra mais no laço");
+  }
+  if (update_output == 0) return ((double)average); // Se o parametro recebido na funcao for zero, ele retorna somente o valor de media calculado anteriormente
+
+  else { // Caso seja 1, signfica que está no tempo de amostragem, e ai atualiza a variável média
+    Sum = data_sensor - last_reads[Position % max_int] + Sum;
+    last_reads[Position % max_int] = data_sensor;
+    average = (float)Sum / (float)(max_int);
+    Position = (Position + 1) % max_int;
+    return ((double)average);
+  }
+}
+
+//Função para verificar tempo de amostragem.
+void samplingTime() { // Essa função verifica se o tempo de amostragem  selecionado ocorreu
+  if (millis() - timer1 > delay_int) { // Caso o tempo de amostragem tenha ocorrido, ele envia 1 para a função de filtro de media movel
+    //Dessa forma a função sabe que é para atualizar o valor de saída para um novo valor filtrado
+    movingAverage(1);
+    timer1 = millis(); // atualiza para contar o tempo mais uma vez
+  }
 }
