@@ -141,7 +141,9 @@ Desliga a bobina.
 - **mcpwm_num:** unidade mcpwm que será controlada.
 - **timer_num:** unidade de timer utilizada como referência.
 
+1.14) **void samplingTime()**
 
+Função responsável por checar se o tempo de amostragem ocorreu.
           
 
 ### 2) **Funções com retorno float**
@@ -164,6 +166,14 @@ Função que calcula a diferença percentual de um Valor A em relação a um Val
 **- Parâmetros:**
   - **valueA:** Valor A que irá ser usado para tirar a referência percentual;
   - **valueB:** Valor B que irá ser usado como referência.
+2.4) **float movingAverage(bool update_output)**
+
+Função para calcular a média móvel do sinal do protótipo
+**- Parâmetros:**
+  - **update_output:** informa qual será a função do filtro.;
+  - update_output = 0 => Imprime ultimo valor da média móvel
+  - update_output = 1 => Atualiza o buffer circular
+
 
 ### 3) **Funções de chamada das ISR**
 3.1) **void WiFiISRCallback()**
