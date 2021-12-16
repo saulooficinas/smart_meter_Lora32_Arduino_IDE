@@ -6,7 +6,7 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 15/12/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 03/12/2021 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -110,6 +110,8 @@ void saveConfigCallback();
 volatile int data_sensor = 0;
 volatile unsigned long timer1 = 0;
 
+//Timer para configurar o tempo de envio da informação no MySQL.
+volatile unsigned long timer2 = 0;
 /*=============================|| Função da ISR ||=============================================*/
 //Função de callback da ISR do WiFi.
 void IRAM_ATTR WiFiISRCallback()
@@ -303,7 +305,7 @@ void vTaskDataSensor(void* pvParamaters)
     samplingTime(); // Função que analisa se o tempo de amostragem passou e chama a função do filtro de média móvel, atualizando o buffer circular
 
     //Seção de debug:
-    Serial.println("[DATA_t]: Leitura: " + String(data_sensor) + "// MovingAvarege:" + String(movingAverage(0)));
+    //Serial.println("[DATA_t]: Leitura: " + String(data_sensor) + "// MovingAvarege:" + String(movingAverage(0)));
 
     //Salvando dados na struct
     sensorValue.pino = PIN_PROTOTIPO;
@@ -314,15 +316,20 @@ void vTaskDataSensor(void* pvParamaters)
     /* O tempo de delay entre o display e o envio da MySQL é de 30 s.*/
     xQueueSend(xFilaDisplay, &sensorValue, portMAX_DELAY);
 
-    //Enviado dados para a task do Display
-    xQueueSend(xFilaMySQL, &sensorValue, portMAX_DELAY);
-    vTaskDelay(1);
+    //If para contar 30 segundos.
+    if (millis() - timer2 > time_mysql) {
+
+      xQueueSend(xFilaMySQL, &sensorValue, portMAX_DELAY);
+      timer2 = millis();
+    }
+
+    vTaskDelay(3);
   }
 }
 
 /*
- Obs: Os dados da função de filtro de média móvel precisam ser atualizados por alguma tarefa, então
- é necessário que a tarefa do MySQL  ocorra em um tempo fixo.
+  Obs: Os dados da função de filtro de média móvel precisam ser atualizados por alguma tarefa, então
+  é necessário que a tarefa do MySQL  ocorra em um tempo fixo.
 */
 
 //Tarefa de imprimir no display
@@ -786,3 +793,5 @@ void samplingTime() { // Essa função verifica se o tempo de amostragem  seleci
     timer1 = millis(); // atualiza para contar o tempo mais uma vez
   }
 }
+
+
