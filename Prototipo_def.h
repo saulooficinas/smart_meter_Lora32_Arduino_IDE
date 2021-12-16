@@ -1,13 +1,12 @@
 // Defines de variáveis.
-//Obs: Esses dados são do experimento, e podem ( e devem) ser mudados dependendo da montagem.
 #define CAMPO_BOBINA 0.006
-#define DIAM_TUBE 0.06
+#define DIAM_TUBE 0.06 
 #define MAT_PI 3.1415926536
 #define CONST_SENSOR 1
 
 //Valor de interações do filtro de média móvel
 #define max_int 100
-
+#define delay_int 1 // 1 ms
 //Pino para configurar WiFi e interrupção do sensor de referência.
 #define pin_ISR_WiFi 25
 
@@ -67,6 +66,10 @@ static void bobina_ascendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num, f
 static void bobina_descendente(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num, float duty_cicle);
 static void bobina_desligada(mcpwm_unit_t mcpwm_num, mcpwm_timer_t timer_num);
 
+
+//Funções de Leitura
+void samplingTime();
+float movingAverage(bool update_output);
 
 /*======================|| CÓDIGOS DE ERROS CRÍTICOS ||============================*/
 /*
