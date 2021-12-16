@@ -6,6 +6,8 @@ Organizado por alunos do Instituto Federal de Alagoas - Campus Palmeida dos índ
 
 *OBS: Foi utilizado o Arduino IDE, devido a facilidade com as bibliotecas presentes nele.*
 
+[Link para o app do projeto](https://github.com/chechely/medidor#readme)
+
 ## Objetivos do projeto:
 
 * Display OLED;
