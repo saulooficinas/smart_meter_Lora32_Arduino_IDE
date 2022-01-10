@@ -1,19 +1,22 @@
 // Defines de variáveis.
-#define CAMPO_BOBINA 0.006
-#define DIAM_TUBE 0.06 
+#define CAMPO_BOBINA 0.003
+#define DIAM_TUBE 0.06
 #define MAT_PI 3.1415926536
 #define CONST_SENSOR 1
 
 //Valor de interações do filtro de média móvel
 #define max_int 100
 #define delay_int 1 // 1 ms
+#define time_mysql 10000 // a cada 30 s.
+
 //Pino para configurar WiFi e interrupção do sensor de referência.
-#define pin_ISR_WiFi 25
+#define pin_ISR_WiFi 22
 
 //define saídas
 #define PIN_PROTOTIPO 33
-#define IP_SENSOR 1
+#define IP_SENSOR 148148148
 
+//const char host[] ="10.3.104.161";
 
 //Definido pinos do PWM
 #define GPIO_PWM0A_OUT 12
@@ -42,6 +45,13 @@ struct sensorRef
 
 //Obs: 0 -> Ref
 //     1 -> Prot
+
+//Definição de variável constante para controle de giro da bobina
+//0 -> Oscilando
+//1 -> SUBINDO
+//2 -> DESCENDO]
+volatile int estado_bobina = 1;
+//Obs: escolha aqui qual será o estado de controle da bobina
 
 /*======================|| Protótipo das funções que irei utilizar||============================*/
 //PROCEDIMENTOS
@@ -77,5 +87,5 @@ float movingAverage(bool update_output);
   401: Erro ao salvar arquivo;
   666: Problema ao criar tarefas do freeRTOS;
   425: ClientTimeout ao enviar dados.
- 
-*/ 
+
+*/
