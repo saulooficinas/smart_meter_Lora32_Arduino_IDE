@@ -6,7 +6,7 @@
    e irá enviar a vazão para um servidor WEB. Além disso, também receberá dados
    via Bluetooth e terá opções de auto-teste para avaliar seu funcionamento.
 
-   Ultima atualização: 03/12/2021 (SAULO JOSÉ ALMEIDA SILVA)
+   Ultima atualização: 06/12/2022 (SAULO JOSÉ ALMEIDA SILVA)
  ********************************************************************************************/
 
 
@@ -25,12 +25,13 @@
   |-vTaskBobinas   |      00        |         01        | Efetua operações de transição nas bobinas|
 ****************************************************************************************************
 
-
+[ ] Corrigir leitura analógica
+[ ] Corrigir vTaskWiFiReset
 
     >> NÚCLEOS:
         => APP_CPU_NUM = 00
         => PRO_CPU_NUM = 01
-
+  I
     >> Fórmula utilizada no Protótipo:
      V = U.(pi.D)/(4.k.B)
 
@@ -137,6 +138,9 @@ void IRAM_ATTR WiFiISRCallback()
     }
   }
 }
+
+//oBs: Por enquanto, essa função de ISR está inútil, pois, ainda falta ajeitar o WiFi Manager para re-
+// carregar WiFI.
 /*======================================|| SETUP ||=============================================*/
 void setup() {
   //Iniciando Serial
@@ -292,7 +296,7 @@ void vTaskDataSensor(void* pvParamaters)
       //Limpa todos os dados anteriores.
       for (int i = 0; i < max_int; i++)
       {
-      dados[i] = readPrototipo();
+      dados[i] =  ();
       //Serial.println("Valor do dados [" + Streing(i) + "]:" + String(dados[i]));
       acc += dados[i];
       }
@@ -307,9 +311,11 @@ void vTaskDataSensor(void* pvParamaters)
     //Seção de debug:
     //Serial.println("[DATA_t]: Leitura: " + String(data_sensor) + "// MovingAvarege:" + String(movingAverage(0)));
 
+    //Serial.println(readPrototipo());
+
     //Salvando dados na struct
     sensorValue.pino = PIN_PROTOTIPO;
-    sensorValue.valor = transUnit(movingAverage(0));
+    sensorValue.valor = transUnit(movingAverage(0)) / 100.0;
 
 
     //Seção de envio de dados.
@@ -383,26 +389,26 @@ void vTaskMySQL(void* pvParamaters)
         ESP.restart();
       }
 
-      //Pedindo o url para salvar dados
+      //Salvando url para salvar dados
       String url = "http://localhost/nodemcu/salvar.php?";
       url += "vazao=";
       url += sensorValue.valor;
       url += "&id_medidor=";
       url +=  IP_SENSOR;
 
-
+      //Informações para Debug
       Serial.print("[MySQL_T]: Requisitando URL:");
       Serial.println(url);
 
-      //Faz a solicitação de enviar dados
+      //Faz a solicitação através do Client
       client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                    "Host: " + host + "\r\n" +
                    "Connection: close\r\n\r\n");
 
-      //Verifica tempo de conexão
+      //Salva dados em variável
       unsigned long timeout = millis();
 
-      //Verifica se o cliente está respondendo a requisição
+      //Verifica o tempo em que o cliente está respondendo a requisição
       while (client.available() == 0) {
         if (millis() - timeout > 5000) {
           Serial.println("[MySQL_T]: >>> Client Timeout !");
@@ -415,9 +421,10 @@ void vTaskMySQL(void* pvParamaters)
 
       //O cliente responde, então analisa o que ele está respondendo.
       while (client.available()) {
-        //Lê os dados do cliente até encontrar o '\r' e salva em uma instring
+        //Lê os dados do cliente até encontrar o '\r' e salva em uma string
         String line = client.readStringUntil('\r');
-        //Serial.print(line);
+        
+        Serial.print(line);
 
         //Compara a mensagem deixada no cliente com o valor line
         if (line.indexOf("salvo_com_sucesso_tabela_2") != -1)
@@ -425,7 +432,7 @@ void vTaskMySQL(void* pvParamaters)
           Serial.println("[MySQL_T]: Arquivo foi salvo com sucesso.");
         }
         else if (line.indexOf("erro_ao_salvar_tabela_2") != -1)
-        {
+        { 
           Serial.println("[MySQL_T]: Houve um erro ao salvar o dado. Verifique as configurações.");
           //Poderia ligar um led para me avisar que não está funcionando.
           errorMessage(401, 5000);
@@ -433,7 +440,7 @@ void vTaskMySQL(void* pvParamaters)
       }
     }
     Serial.println("[MySQL_T]:Fechando conexão...\n");
-    vTaskDelay(pdMS_TO_TICKS(10000));//Espera 1 min até cadastrar um novo dado de vazão
+    vTaskDelay(pdMS_TO_TICKS(15000));//Espera 1 min até cadastrar um novo dado de vazão
   }
 }
 
@@ -481,18 +488,28 @@ void vTaskBobinas(void* pvParamaters)
 {
   while (1)
   {
-    /* Bobina oscilando
-      //O código aqui é de exemplo, vai ser modificado mediante as necessidades do projeto.
-      bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);//Gira o motor no sentido horário
-      vTaskDelay(pdMS_TO_TICKS(3000));
+    switch (estado_bobina)
+    {
+      case 0:
+        //O código aqui é de exemplo, vai ser modificado mediante as necessidades do projeto.
+        bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);//Gira o motor no sentido horário
+        vTaskDelay(pdMS_TO_TICKS(3000));
 
-      bobina_descendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
-      vTaskDelay(pdMS_TO_TICKS(3000));
-    */
-
-    //Bobina parada no sentido ascendente
-    bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
-
+        bobina_descendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
+        vTaskDelay(pdMS_TO_TICKS(3000));
+        break;
+      case 1:
+        //Bobina parada no sentido ascendente
+        bobina_ascendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
+        break;
+      case 2:
+        //Bobina no sentido ascendente
+        bobina_descendente(MCPWM_UNIT_0, MCPWM_TIMER_0, 100);
+        break;
+      default:
+        //estado_bobina = 0;
+        break;
+    }
     vTaskDelay(5);
   }
 }
@@ -516,6 +533,9 @@ void initDisplay()
 //Função para imprimir dados no display
 void printDisplay(double protoData)
 {
+  //tensao
+  float tensao;
+  tensao = protoData * (4 * CONST_SENSOR * CAMPO_BOBINA) / (MAT_PI * DIAM_TUBE);
   Heltec.display->clear();
   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
   Heltec.display->setFont(ArialMT_Plain_16);
@@ -523,7 +543,7 @@ void printDisplay(double protoData)
   Heltec.display->setFont(ArialMT_Plain_10);
   Heltec.display->drawString(0, 20, ">Vazão: " + String(protoData) + " L/min");
   Heltec.display->drawString(0, 30, ">WiFi: " + String(WiFi.SSID()));
-  Heltec.display->drawString(0, 40, ">Bobina:");
+  Heltec.display->drawString(0, 40, ">Tensão:" + String(tensao) + " V");
 
   Heltec.display->display();
 }
@@ -612,37 +632,19 @@ float readPrototipo()
 {
   double value;
 
+
   /*
-    O valor do sensor é 1/5 do valor real. Quando o sensor é alimentado com 3.3 V, ele terá uma leitura de 0
-    a 16,5 V.
+     Vout = 277/841*Vin
 
-    Vout = Vin/5;
+     Vout = 3.3/4095 * Sinal
 
-    Como a tensão associada é com 12 bits de resolução. A tensão mínima captada pelo ESP32 é de;
+     Vin = 841/277*3.3/4095 * Sinal
 
-    Resolução = 3,3 V /2^12 ~= 0.8057 mV
-
-    Como o valor de entrada é 5 vezes maior, então é preciso de uma tensão mínima de :
-    Vmin = Vmin(sensor)*5 = 0.0857 mV * 5 = 4,0285 mV
-
-    O ESP transforma dados de 0 a 3,3 V em valores analógicos de 0 a 4095.
-
-    3.3 V ==> 4095
-    x V => y
-
-    x = 3.3 Y /4095
-
-    Agora, sabendo que x é o Vout do sensor, então:
-
-    Vreal = 5*Vout = 5*3.3*Sinal/4095;
-
-    V(real)=Sinal.16,5/(4095)
-
-    Obs: Esse valor dá um valor próximo do real. É preciso ajustar esse valor para dar o real.
   */
 
   //Retorna valor da tensão.
-  value = analogRead(PIN_PROTOTIPO) * 16.5 / 4095;
+  value = analogRead(PIN_PROTOTIPO) * 336 / (4095 * 3.3);
+  //Serial.println("Analogico:" + String(value));
 
   return value;
 }
@@ -793,5 +795,3 @@ void samplingTime() { // Essa função verifica se o tempo de amostragem  seleci
     timer1 = millis(); // atualiza para contar o tempo mais uma vez
   }
 }
-
-
