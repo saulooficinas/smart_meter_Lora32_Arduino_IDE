@@ -4,9 +4,12 @@ Versão 1.2 do Projeto das Oficinas 4.0, voltado para a Área do IOT e Eletricid
 
 Organizado por alunos do Instituto Federal de Alagoas - Campus Palmeida dos índios (PIN);
 
-*OBS: Foi utilizado o Arduino IDE, devido a facilidade com as bibliotecas presentes nele.*
+*OBS: Foi utilizado o Arduino IDE, devido a facilidade com as bibliotecas presentes nele. Além disso, ele funciona com um
+script via php em um servidor XAMPP. Caso você tenha um host já pronto, só precisa configurar a forma como envia os dados para
+salvar no banco.*
 
 [Link para o app do projeto](https://github.com/chechely/medidor#readme)
+
 
 ## Objetivos do projeto:
 
