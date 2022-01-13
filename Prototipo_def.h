@@ -13,10 +13,10 @@
 #define pin_ISR_WiFi 22
 
 //define saídas
-#define PIN_PROTOTIPO 33
+#define PIN_PROTOTIPO 36
 #define IP_SENSOR 148148148
 
-//const char host[] ="10.3.104.161";
+const char* host = "Your host";
 
 //Definido pinos do PWM
 #define GPIO_PWM0A_OUT 12
