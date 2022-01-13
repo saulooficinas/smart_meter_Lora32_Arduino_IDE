@@ -25,13 +25,12 @@
   |-vTaskBobinas   |      00        |         01        | Efetua operações de transição nas bobinas|
 ****************************************************************************************************
 
-[ ] Corrigir leitura analógica
-[ ] Corrigir vTaskWiFiReset
+  [ ] Corrigir vTaskWiFiReset
 
     >> NÚCLEOS:
         => APP_CPU_NUM = 00
         => PRO_CPU_NUM = 01
-  I
+  
     >> Fórmula utilizada no Protótipo:
      V = U.(pi.D)/(4.k.B)
 
@@ -42,9 +41,6 @@
      k: Constante encontrada nos testes;
      B: Módulo do campo gerado pelas bobinas; (T)
 
-    BUG ATUAL:
-    - Ao mantar a interrupção, o código nem inicia. ( )
-    - Task do Reset WiFi está com problema de sintexe. ( )
 
     NECESSIDADE:
     - Corrigir problema na tarefa de resetar WiFi pela interrupção ();
@@ -305,18 +301,19 @@ void vTaskDataSensor(void* pvParamaters)
     */
 
     //Capturando dados.
-    data_sensor = readPrototipo(); //Captura dados de tensão na entrada analógica;
+    data_sensor = analogRead(PIN_PROTOTIPO); //Captura dados de tensão na entrada analógica;
     samplingTime(); // Função que analisa se o tempo de amostragem passou e chama a função do filtro de média móvel, atualizando o buffer circular
 
     //Seção de debug:
     //Serial.println("[DATA_t]: Leitura: " + String(data_sensor) + "// MovingAvarege:" + String(movingAverage(0)));
 
-    //Serial.println(readPrototipo());
 
     //Salvando dados na struct
     sensorValue.pino = PIN_PROTOTIPO;
-    sensorValue.valor = transUnit(movingAverage(0)) / 100.0;
+    sensorValue.valor = transUnit(movingAverage(0));
 
+    //Serial.println("[DATA_t]: Leitura: " + String(readPrototipo()) + " V // MovingAvarege:" + String(sensorValue.valor));
+     
 
     //Seção de envio de dados.
     /* O tempo de delay entre o display e o envio da MySQL é de 30 s.*/
@@ -348,6 +345,7 @@ void vTaskDisplay(void* pvParamaters)
     if (xQueueReceive(xFilaDisplay, &sensorValue, portMAX_DELAY) == pdTRUE)
     {
       //Imprimindo valor no display.
+      //Serial.println(sensorValue.valor);
       printDisplay(sensorValue.valor);
     }
     vTaskDelay(3);
@@ -364,7 +362,7 @@ void vTaskMySQL(void* pvParamaters)
     if (xQueueReceive(xFilaMySQL, &sensorValue, portMAX_DELAY) == pdTRUE)
     {
       //Ele mesmo pega o IP do host pelo gateway, sem a necessidade de colocalo.
-      IPAddress host = WiFi.gatewayIP();
+      //IPAddress host = WiFi.gatewayIP();
 
       //Conectando ao webcliente.
       Serial.print("[MySQL_T]: Conectando com ");
@@ -390,9 +388,10 @@ void vTaskMySQL(void* pvParamaters)
       }
 
       //Salvando url para salvar dados
-      String url = "http://localhost/nodemcu/salvar.php?";
+      String url = "/nodemcu/salvar.php?";
       url += "vazao=";
       url += sensorValue.valor;
+      //url += 10;
       url += "&id_medidor=";
       url +=  IP_SENSOR;
 
@@ -423,8 +422,8 @@ void vTaskMySQL(void* pvParamaters)
       while (client.available()) {
         //Lê os dados do cliente até encontrar o '\r' e salva em uma string
         String line = client.readStringUntil('\r');
-        
-        Serial.print(line);
+
+        //Serial.print(line);
 
         //Compara a mensagem deixada no cliente com o valor line
         if (line.indexOf("salvo_com_sucesso_tabela_2") != -1)
@@ -432,18 +431,18 @@ void vTaskMySQL(void* pvParamaters)
           Serial.println("[MySQL_T]: Arquivo foi salvo com sucesso.");
         }
         else if (line.indexOf("erro_ao_salvar_tabela_2") != -1)
-        { 
+        {
           Serial.println("[MySQL_T]: Houve um erro ao salvar o dado. Verifique as configurações.");
           //Poderia ligar um led para me avisar que não está funcionando.
           errorMessage(401, 5000);
+
         }
       }
+      Serial.println("[MySQL_T]:Fechando conexão...\n");
+      vTaskDelay(pdMS_TO_TICKS(15000));//Espera 1 min até cadastrar um novo dado de vazão
     }
-    Serial.println("[MySQL_T]:Fechando conexão...\n");
-    vTaskDelay(pdMS_TO_TICKS(15000));//Espera 1 min até cadastrar um novo dado de vazão
   }
 }
-
 
 //Tarefa para resetar o WiFi (Precisa de semáforo!)
 void vTaskWiFiReset(void* pvParamaters)
@@ -535,7 +534,7 @@ void printDisplay(double protoData)
 {
   //tensao
   float tensao;
-  tensao = protoData * (4 * CONST_SENSOR * CAMPO_BOBINA) / (MAT_PI * DIAM_TUBE);
+  tensao = readPrototipo();
   Heltec.display->clear();
   Heltec.display->setTextAlignment(TEXT_ALIGN_LEFT);
   Heltec.display->setFont(ArialMT_Plain_16);
@@ -643,7 +642,7 @@ float readPrototipo()
   */
 
   //Retorna valor da tensão.
-  value = analogRead(PIN_PROTOTIPO) * 336 / (4095 * 3.3);
+  value = analogRead(PIN_PROTOTIPO) * 3.3 / (4095);
   //Serial.println("Analogico:" + String(value));
 
   return value;
@@ -653,7 +652,7 @@ float readPrototipo()
 //Função para transformar de tensão para litros.
 double transUnit(float protoData)
 {
-  return protoData * (MAT_PI * DIAM_TUBE) / (4 * CONST_SENSOR * CAMPO_BOBINA);
+  return protoData * (3.3/4095)*(MAT_PI * DIAM_TUBE) / (4 * CONST_SENSOR * CAMPO_BOBINA);
 }
 
 //Função para calcular a diferença entre dois valores.
