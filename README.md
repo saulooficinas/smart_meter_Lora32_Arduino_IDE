@@ -235,7 +235,9 @@ Tarefa responsável por reconfigurar dados de WiFi no Microcontrolador. Ela espe
 
 Tarefa responsável por controlar a polaridade das bobinas do projeto, controlando uma ponte H.
 
-![vTaskBobinas](https://user-images.githubusercontent.com/90044415/144139417-e3bbddd6-a1ae-4606-ad0b-51b4d4b9cb3b.png)
+![Slide8](https://user-images.githubusercontent.com/90044415/150989689-c4480171-1091-4431-b4c5-a6765cb8595d.PNG)
+
+
 
 ## Esquema do servidor
 
