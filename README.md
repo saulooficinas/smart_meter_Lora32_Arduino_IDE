@@ -34,6 +34,7 @@ O código para a comunicação com o MySQL é via script em PHP utilizando um [W
 - Heltec WiFi Esp 32 LoRa;
 - WebServer (Presente no Arduino IDE)
 - DNSS (Presente no Arduino IDE)
+- FreeRTOS ( Presente e imbutido no ESP32);
 
 Obs: A instalação da biblioteca da Heltec foi a partir do video do [Fernado K](https://www.fernandok.com/2019/03/instalacao-do-esp32-lora-na-arduino-ide.html);
 
